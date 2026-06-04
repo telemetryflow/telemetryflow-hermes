@@ -1,0 +1,35 @@
+model:
+  default: "glm-5.1"
+  provider: "opencode-go"
+
+agent:
+  max_turns: 90
+
+terminal:
+  backend: local
+  timeout: 300
+
+delegation:
+  max_iterations: 50
+  max_concurrent_children: 1
+
+tools:
+  terminal: true
+  cronjob: true
+  delegation: true
+  web: true
+
+memory:
+  tier1_max_memory_chars: 2200
+  tier1_max_user_chars: 1375
+
+curator:
+  enabled: true
+  stale_after_days: 30
+  archive_after_days: 90
+  idle_before_run_hours: 2
+  max_review_iterations: 8
+
+logging:
+  level: info
+  path: ~/.hermes/logs

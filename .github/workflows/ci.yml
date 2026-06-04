@@ -1,0 +1,276 @@
+# =============================================================================
+# TelemetryFlow Hermes - CI Workflow
+# =============================================================================
+#
+# TelemetryFlow Hermes - Community Enterprise Observability Platform (CEOP)
+# Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
+#
+# This workflow runs tests and linting for TelemetryFlow Hermes:
+# - Linting with ruff and mypy (via Makefile)
+# - Unit & integration tests with coverage (via Makefile)
+# - Security scan with bandit (via Makefile)
+#
+# =============================================================================
+
+name: CI - TelemetryFlow Hermes
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+      - "feature/**"
+      - "release/**"
+    paths:
+      - "plugins/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "Makefile"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+    paths:
+      - "plugins/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "Makefile"
+  workflow_dispatch:
+    inputs:
+      skip_lint:
+        description: "Skip linting"
+        required: false
+        type: boolean
+        default: false
+
+env:
+  PYTHON_VERSION: "3.12"
+  PRODUCT_NAME: TelemetryFlow Hermes
+  VERSION: "2.0.0"
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  # ===========================================================================
+  # Code Quality - Lint, Format, Type Check (via Makefile)
+  # ===========================================================================
+  lint:
+    name: Lint & Code Quality
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_lint }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install CI dependencies
+        run: make ci-deps
+
+      - name: Run CI lint suite
+        run: make ci-lint
+
+  # ===========================================================================
+  # Unit Tests (via Makefile)
+  # ===========================================================================
+  test-unit:
+    name: Unit Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: lint
+    if: always() && (needs.lint.result == 'success' || needs.lint.result == 'skipped')
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install CI dependencies
+        run: make ci-deps
+
+      - name: Run unit tests (CI mode)
+        run: make ci-test-unit
+
+      - name: Upload coverage report
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-unit
+          path: |
+            coverage-unit.xml
+            junit-unit.xml
+          retention-days: 7
+
+  # ===========================================================================
+  # Integration Tests (via Makefile)
+  # ===========================================================================
+  test-integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    if: always() && (needs.lint.result == 'success' || needs.lint.result == 'skipped')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install CI dependencies
+        run: make ci-deps
+
+      - name: Run integration tests (CI mode)
+        run: make ci-test-integration
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-integration
+          path: |
+            coverage-integration.xml
+            junit-integration.xml
+          retention-days: 7
+        continue-on-error: true
+
+  # ===========================================================================
+  # Security Scan (via Makefile)
+  # ===========================================================================
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: lint
+    if: always() && (needs.lint.result == 'success' || needs.lint.result == 'skipped')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install CI dependencies
+        run: make ci-deps
+
+      - name: Run security scan (CI mode)
+        run: make ci-security
+
+      - name: Upload Bandit SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: bandit-results.sarif
+        continue-on-error: true
+
+  # ===========================================================================
+  # Coverage Report (via Makefile)
+  # ===========================================================================
+  coverage:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    needs: [test-unit, test-integration]
+    if: always() && needs.test-unit.result == 'success'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install CI dependencies
+        run: make ci-deps
+
+      - name: Generate coverage report (CI mode)
+        run: make ci-coverage
+
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-html
+          path: htmlcov/
+          retention-days: 7
+        continue-on-error: true
+
+      - name: Coverage summary
+        run: |
+          echo "## Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          if [ -f coverage.xml ]; then
+            echo "Coverage report generated successfully" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Plugin Tools Tested (37 tools across 20 TFO modules):" >> $GITHUB_STEP_SUMMARY
+            echo "- Monitoring: uptime, VM, agent, K8s, service-map, network-map, DB-monitoring, status-page" >> $GITHUB_STEP_SUMMARY
+            echo "- Observability: metrics, traces, logs, correlations, exemplars" >> $GITHUB_STEP_SUMMARY
+            echo "- AI & LLM: generate-insight, chat-with-context, stream-chat, query-ai-intelligence, manage-conversation, manage-provider, query-llm-usage" >> $GITHUB_STEP_SUMMARY
+            echo "- Management: alerts, dashboards, reports, retention, data-masking" >> $GITHUB_STEP_SUMMARY
+            echo "- Infrastructure: restart-pod, rollback-deploy, scale-deployment, update-alert, check-infra" >> $GITHUB_STEP_SUMMARY
+            echo "- Platform: account, platform, audit, subscription, tenancy, IAM, SSO, TFQL" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Coverage threshold: 95%**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No coverage report available" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ===========================================================================
+  # CI Summary
+  # ===========================================================================
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [lint, test-unit, test-integration, security, coverage]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## ${{ env.PRODUCT_NAME }} v${{ env.VERSION }} - CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.test-unit.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Tests | ${{ needs.test-integration.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Coverage | ${{ needs.coverage.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### TelemetryFlow Hermes" >> $GITHUB_STEP_SUMMARY
+          echo "- 37 plugin tools covering all 20 TFO Platform modules" >> $GITHUB_STEP_SUMMARY
+          echo "- Python stdlib only (zero external dependencies)" >> $GITHUB_STEP_SUMMARY
+          echo "- 4 agent profiles: triage, investigator, reviewer, remediator" >> $GITHUB_STEP_SUMMARY
+          echo "- 29 skills across 18 categories" >> $GITHUB_STEP_SUMMARY
+          echo "- Multi-agent pipeline: Triage → Investigate → Review → Remediate" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check overall status
+        run: |
+          if [[ "${{ needs.lint.result }}" == "failure" ]] || \
+             [[ "${{ needs.test-unit.result }}" == "failure" ]]; then
+            echo "CI failed - one or more required jobs failed"
+            exit 1
+          fi
+          echo "CI passed successfully"

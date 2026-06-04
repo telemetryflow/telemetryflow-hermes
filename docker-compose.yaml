@@ -1,0 +1,463 @@
+#================================================================================================
+# TelemetryFlow Hermes - Docker Compose Configuration
+# Full Stack: Hermes + PostgreSQL + ClickHouse + Redis + NATS + Backend + Frontend
+#
+# TelemetryFlow Hermes - Community Enterprise Observability Platform (CEOP)
+# Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
+#
+# PROFILES:
+# - core:       Essential services (postgres, clickhouse, redis, nats, backend, frontend)
+# - monitoring: Observability stack (tfo-collector, tfo-agent, jaeger)
+# - tools:      Management tools (portainer)
+# - all:        All services combined
+#
+# USAGE:
+# docker-compose up -d                                        # Hermes agent only
+# docker-compose --profile core up -d                         # Core services + Hermes
+# docker-compose --profile core --profile monitoring up -d    # Core + monitoring
+# docker-compose --profile all up -d                          # All services
+#
+# QUICK START:
+# 1. Start core stack:    docker-compose --profile core up -d
+# 2. Access frontend:     http://localhost:8080
+# 3. Access backend API:  http://localhost:3000/api/v2
+# 4. Access Swagger:      http://localhost:3000/api
+#
+# NOTE: tfo-agent requires custom image (telemetryflow/telemetryflow-agent).
+#       It is non-blocking — the rest of the stack works without it.
+#       For production bind-mount volumes, run: bash scripts/init-volumes.sh
+#
+#================================================================================================
+# OTLP HTTP Endpoints (Dual Ingestion Support)
+#================================================================================================
+#
+#   TelemetryFlow Platform (Recommended - TFO Standalone):
+#     POST http://localhost:4318/v2/traces
+#     POST http://localhost:4318/v2/metrics
+#     POST http://localhost:4318/v2/logs
+#
+#   OTEL Community (Backwards Compatible - OCB/Standard):
+#     POST http://localhost:4318/v1/traces
+#     POST http://localhost:4318/v1/metrics
+#     POST http://localhost:4318/v1/logs
+#
+#   gRPC (Both versions via same port): localhost:4317
+#
+#================================================================================================
+
+#================================================================================================
+# NETWORK SETUP
+#================================================================================================
+networks:
+  telemetryflow_hermes_net:
+    name: telemetryflow_hermes_net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.155.0.0/16
+
+#================================================================================================
+# SERVICES
+#================================================================================================
+services:
+
+  #==============================================================================================
+  # HERMES AGENT
+  #==============================================================================================
+
+  #----------------------------------------------------------------------------------------------
+  # TFO-HERMES - TelemetryFlow Hermes AI Agent
+  #----------------------------------------------------------------------------------------------
+  tfo-hermes:
+    container_name: ${CONTAINER_HERMES:-telemetryflow_hermes_agent}
+    image: ${IMAGE_NAME:-telemetryflow/telemetryflow-hermes}:${IMAGE_TAG:-2.0.0}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${VERSION:-2.0.0}
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        GIT_BRANCH: ${GIT_BRANCH:-main}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
+    restart: unless-stopped
+    environment:
+      - TELEMETRYFLOW_API_KEY=${TELEMETRYFLOW_API_KEY}
+      - TELEMETRYFLOW_API_URL=${TELEMETRYFLOW_API_URL:-http://backend:3000}
+      - TELEMETRYFLOW_ENVIRONMENT=${TELEMETRYFLOW_ENVIRONMENT:-development}
+      - HERMES_MODEL=${HERMES_MODEL:-zhipu/glm-5.1}
+      - HERMES_INVESTIGATOR_MODEL=${HERMES_INVESTIGATOR_MODEL:-claude-sonnet-4-5}
+    networks:
+      telemetryflow_hermes_net:
+        ipv4_address: ${CONTAINER_IP_HERMES:-172.155.152.10}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  #==============================================================================================
+  # INFRASTRUCTURE SERVICES
+  #==============================================================================================
+
+  #----------------------------------------------------------------------------------------------
+  # POSTGRESQL - Relational Data Storage (Config, Entities, IAM)
+  #----------------------------------------------------------------------------------------------
+  postgres:
+    profiles: ["core", "all"]
+    platform: linux/amd64
+    image: postgres:${POSTGRES_VERSION:-16-alpine}
+    container_name: ${CONTAINER_POSTGRES:-telemetryflow_hermes_postgres}
+    restart: unless-stopped
+    ports:
+      - "${PORT_POSTGRES:-5432}:5432"
+    environment:
+      - TZ=${TZ:-UTC}
+      - POSTGRES_USER=${POSTGRES_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-telemetryflow123}
+      - POSTGRES_DB=${POSTGRES_DB:-telemetryflow_db}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - ${DATA_POSTGRESQL:-${VOLUMES_BASE_PATH:-/opt/data/docker/telemetryflow-hermes}/postgresql}:/var/lib/postgresql/data
+    networks:
+      telemetryflow_hermes_net:
+        ipv4_address: ${CONTAINER_IP_POSTGRES:-172.155.151.20}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME:-postgres} -d ${POSTGRES_DB:-telemetryflow_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  #----------------------------------------------------------------------------------------------
+  # CLICKHOUSE - Time-Series & Analytics Storage (Metrics, Logs, Traces, Audit)
+  #----------------------------------------------------------------------------------------------
+  clickhouse:
+    profiles: ["core", "all"]
+    platform: linux/amd64
+    image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-latest}
+    container_name: ${CONTAINER_CLICKHOUSE:-telemetryflow_hermes_clickhouse}
+    restart: unless-stopped
+    ports:
+      - "${PORT_CLICKHOUSE_HTTP:-8123}:8123"
+      - "${PORT_CLICKHOUSE_NATIVE:-9000}:9000"
+      - "${PORT_CLICKHOUSE_METRICS:-9363}:9363"
+    environment:
+      - TZ=${TZ:-UTC}
+      - CLICKHOUSE_DB=${CLICKHOUSE_DB:-telemetryflow_db}
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-telemetryflow123}
+    volumes:
+      - ${DATA_CLICKHOUSE:-${VOLUMES_BASE_PATH:-/opt/data/docker/telemetryflow-hermes}/clickhouse}/data:/var/lib/clickhouse
+      - ${DATA_CLICKHOUSE:-${VOLUMES_BASE_PATH:-/opt/data/docker/telemetryflow-hermes}/clickhouse}/logs:/var/log/clickhouse-server
+    networks:
+      telemetryflow_hermes_net:
+        ipv4_address: ${CONTAINER_IP_CLICKHOUSE:-172.155.151.40}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  #----------------------------------------------------------------------------------------------
+  # REDIS - Cache (L2), Session Store, BullMQ Job Queues
+  #   DB 0: Session storage
+  #   DB 1: L2 cache (prefix tf:cache:, TTL 1800s)
+  #   DB 2: BullMQ queues (otlp-ingestion, domain-events, telemetry-processing, alerts, etc.)
+  #----------------------------------------------------------------------------------------------
+  redis:
+    profiles: ["core", "all"]
+    platform: linux/amd64
+    image: redis:${REDIS_VERSION:-7-alpine}
+    container_name: ${CONTAINER_REDIS:-telemetryflow_hermes_redis}
+    restart: unless-stopped
+    ports:
+      - "${PORT_REDIS:-6379}:6379"
+    command: >
+      redis-server
+      --maxmemory ${REDIS_MAX_MEMORY:-512mb}
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
+    volumes:
+      - ${DATA_REDIS:-${VOLUMES_BASE_PATH:-/opt/data/docker/telemetryflow-hermes}/redis}:/data
+    networks:
+      telemetryflow_hermes_net:
+        ipv4_address: ${CONTAINER_IP_REDIS:-172.155.151.50}
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  #----------------------------------------------------------------------------------------------
+  # NATS - Cross-Module Domain Event Messaging
+  #   JetStream enabled for durable message delivery
+  #----------------------------------------------------------------------------------------------
+  nats:
+    profiles: ["core", "all"]
+    platform: linux/amd64
+    image: nats:${NATS_VERSION:-2-alpine}
+    container_name: ${CONTAINER_NATS:-telemetryflow_hermes_nats}
+    restart: unless-stopped
+    ports:
+      - "${PORT_NATS_CLIENT:-4222}:4222"
+      - "${PORT_NATS_MONITOR:-8222}:8222"
+    command: ["--js", "--sd", "/data", "-m", "8222"]
+    volumes:
+      - ${DATA_NATS:-${VOLUMES_BASE_PATH:-/opt/data/docker/telemetryflow-hermes}/nats}:/data
+    networks:
+      telemetryflow_hermes_net:
+        ipv4_address: ${CONTAINER_IP_NATS:-172.155.151.55}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  #==============================================================================================
+  # APPLICATION SERVICES
+  #==============================================================================================
+
+  #----------------------------------------------------------------------------------------------
+  # BACKEND - NestJS API (Core Profile - No OTEL dependency)
+  #----------------------------------------------------------------------------------------------
+  backend:
+    profiles: ["core", "all"]
+    platform: linux/amd64
+    image: telemetryflow/telemetryflow-platform:${TFO_PLATFORM_VERSION:-1.4.0}
+    container_name: ${CONTAINER_BACKEND:-telemetryflow_hermes_backend}
+    restart: unless-stopped
+    ports:
+      - "${PORT_BACKEND:-3000}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3000
+      - TZ=${TZ:-UTC}
+
+      # PostgreSQL
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-telemetryflow_db}
+      - POSTGRES_USERNAME=${POSTGRES_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-telemetryflow123}
+
+      # ClickHouse
+      - CLICKHOUSE_HOST=clickhouse
+      - CLICKHOUSE_PORT=8123
+      - CLICKHOUSE_DB=${CLICKHOUSE_DB:-telemetryflow_db}
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-telemetryflow123}
+
+      # Redis (Cache L2 + Session + BullMQ)
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_MAX_MEMORY=${REDIS_MAX_MEMORY:-512mb}
+      - REDIS_DB_SESSION=0
+      - REDIS_DB_CACHE=1
+      - REDIS_DB_BULLMQ=2
+
+      # NATS (Domain Events)
+      - NATS_URL=nats://nats:4222
+
+      # BullMQ
+      - ENABLE_BULLMQ=${ENABLE_BULLMQ:-true}
+
+      # JWT & Session
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-24h}
+      - SESSION_SECRET=${SESSION_SECRET}
+
+      # LLM Encryption
+      - LLM_ENCRYPTION_KEY=${LLM_ENCRYPTION_KEY}
+
+      # CORS
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+
+      # Logging
+      - LOGGER_TYPE=${LOGGER_TYPE:-winston}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_PRETTY_PRINT=${LOG_PRETTY_PRINT:-false}
+
+      # OpenTelemetry (disabled for core profile)
+      - OTEL_ENABLED=false
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-telemetryflow-platform}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    networks:
+      telemetryflow_hermes_net:
+        ipv4_address: ${CONTAINER_IP_BACKEND:-172.155.151.10}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  #----------------------------------------------------------------------------------------------
+  # FRONTEND - Vue 3 SPA (Nginx)
+  #   Serves static assets via nginx, proxies /api to backend
+  #----------------------------------------------------------------------------------------------
+  frontend:
+    profiles: ["core", "all"]
+    platform: linux/amd64
+    image: telemetryflow/telemetryflow-viz:${TFO_PLATFORM_VERSION:-1.4.0}
+    container_name: ${CONTAINER_FRONTEND:-telemetryflow_hermes_frontend}
+    restart: unless-stopped
+    ports:
+      - "${PORT_FRONTEND:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      telemetryflow_hermes_net:
+        ipv4_address: ${CONTAINER_IP_FRONTEND:-172.155.151.15}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  #==============================================================================================
+  # OBSERVABILITY SERVICES
+  #==============================================================================================
+
+  #----------------------------------------------------------------------------------------------
+  # TFO-COLLECTOR - TelemetryFlow Collector
+  #----------------------------------------------------------------------------------------------
+  # Supports dual ingestion: v1 (OTEL standard) and v2 (TelemetryFlow enhanced)
+  #
+  # OTLP HTTP Endpoints:
+  #   TelemetryFlow Platform (Recommended - TFO Standalone):
+  #     POST http://localhost:4318/v2/traces
+  #     POST http://localhost:4318/v2/metrics
+  #     POST http://localhost:4318/v2/logs
+  #
+  #   OTEL Community (Backwards Compatible - OCB/Standard):
+  #     POST http://localhost:4318/v1/traces
+  #     POST http://localhost:4318/v1/metrics
+  #     POST http://localhost:4318/v1/logs
+  #
+  #   gRPC (Both versions via same port): localhost:4317
+  #----------------------------------------------------------------------------------------------
+  tfo-collector:
+    profiles: ["monitoring", "all"]
+    platform: linux/amd64
+    image: telemetryflow/telemetryflow-collector:${TFO_COLLECTOR_VERSION:-1.2.1}
+    command: ["--config=/etc/tfo-collector/tfo-collector.yaml"]
+    container_name: ${CONTAINER_OTEL:-telemetryflow_hermes_tfo_collector}
+    restart: unless-stopped
+    environment:
+      - TELEMETRYFLOW_ENDPOINT=http://host.docker.internal:3000
+      - TELEMETRYFLOW_API_KEY_ID=${TELEMETRYFLOW_API_KEY_ID}
+      - TELEMETRYFLOW_API_KEY_SECRET=${TELEMETRYFLOW_API_KEY_SECRET}
+      - TELEMETRYFLOW_COLLECTOR_ID=${CONTAINER_OTEL:-telemetryflow_hermes_tfo_collector}
+      - TELEMETRYFLOW_ENVIRONMENT=${TELEMETRYFLOW_ENVIRONMENT:-development}
+    volumes:
+      - ./config/tfo-collector/tfo-collector.yaml:/etc/tfo-collector/tfo-collector.yaml:ro
+    ports:
+      - "${PORT_OTEL_GRPC:-4317}:4317"
+      - "${PORT_OTEL_HTTP:-4318}:4318"
+      - "${PORT_OTEL_METRICS:-8889}:8889"
+      - "${PORT_OTEL_HEALTH:-13133}:13133"
+      - "${PORT_OTEL_ZPAGES:-55679}:55679"
+      - "${PORT_OTEL_PPROF:-1777}:1777"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:13133"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      telemetryflow_hermes_net:
+        ipv4_address: ${CONTAINER_IP_OTEL:-172.155.151.30}
+
+  #----------------------------------------------------------------------------------------------
+  # TFO-AGENT - TelemetryFlow Host Metrics Agent
+  #   Collects host-level metrics (CPU, memory, disk, network) and sends heartbeats
+  #   to the backend API. Replaces Prometheus for infrastructure monitoring.
+  #----------------------------------------------------------------------------------------------
+  tfo-agent:
+    profiles: ["monitoring", "all"]
+    platform: linux/amd64
+    image: telemetryflow/telemetryflow-agent:${TFO_AGENT_VERSION:-1.2.0}
+    container_name: ${CONTAINER_TFO_AGENT:-telemetryflow_hermes_tfo_agent}
+    hostname: ${TFO_AGENT_HOSTNAME:-tfo-agent}
+    restart: unless-stopped
+    ports:
+      - "${PORT_TFO_AGENT:-9191}:9191"
+    environment:
+      - TZ=${TZ:-UTC}
+      - TELEMETRYFLOW_ENDPOINT=http://host.docker.internal:3000/api/v2
+      - TELEMETRYFLOW_OTLP_ENDPOINT=http://tfo-collector:4318
+      - TELEMETRYFLOW_API_KEY_ID=${TELEMETRYFLOW_API_KEY_ID}
+      - TELEMETRYFLOW_API_KEY_SECRET=${TELEMETRYFLOW_API_KEY_SECRET}
+      - TELEMETRYFLOW_AGENT_ID=${CONTAINER_TFO_AGENT:-telemetryflow_hermes_tfo_agent}
+      - TELEMETRYFLOW_AGENT_NAME=TFO Hermes Agent
+      - TELEMETRYFLOW_ENVIRONMENT=${TELEMETRYFLOW_ENVIRONMENT:-development}
+      - TFO_AGENT_HEARTBEAT_INTERVAL=${TFO_AGENT_HEARTBEAT_INTERVAL:-60s}
+      - TFO_AGENT_METRICS_INTERVAL=${TFO_AGENT_METRICS_INTERVAL:-30s}
+    volumes:
+      - ./config/tfo-agent/tfo-agent.yaml:/etc/tfo-agent/tfo-agent.yaml:ro
+      - ${DATA_TFO_AGENT:-${VOLUMES_BASE_PATH:-/opt/data/docker/telemetryflow-hermes}/tfo-agent}:/data
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /var/log:/var/log:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      tfo-collector:
+        condition: service_healthy
+    networks:
+      telemetryflow_hermes_net:
+        ipv4_address: ${CONTAINER_IP_TFO_AGENT:-172.155.151.35}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:13133/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+ #==============================================================================================
+  # MANAGEMENT TOOLS
+  #==============================================================================================
+
+  #----------------------------------------------------------------------------------------------
+  # PORTAINER - Docker Container Management UI
+  #----------------------------------------------------------------------------------------------
+  portainer:
+    profiles: ["tools", "all"]
+    platform: linux/amd64
+    image: portainer/portainer-ce:${PORTAINER_VERSION:-latest}
+    container_name: ${CONTAINER_PORTAINER:-telemetryflow_hermes_portainer}
+    restart: unless-stopped
+    ports:
+      - "${PORT_PORTAINER:-9100}:9000"
+      - "${PORT_PORTAINER_HTTPS:-9443}:9443"
+    environment:
+      - TZ=${TZ:-UTC}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${DATA_PORTAINER:-${VOLUMES_BASE_PATH:-/opt/data/docker/telemetryflow-hermes}/portainer}:/data
+    networks:
+      telemetryflow_hermes_net:
+        ipv4_address: ${CONTAINER_IP_PORTAINER:-172.155.151.5}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9000/api/status"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

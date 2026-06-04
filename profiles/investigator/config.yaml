@@ -1,0 +1,34 @@
+model:
+  default: "claude-sonnet-4-5"
+  provider: "anthropic"
+
+agent:
+  max_turns: 45
+
+terminal:
+  backend: local
+  timeout: 300
+
+delegation:
+  max_iterations: 20
+  max_concurrent_children: 1
+
+tools:
+  terminal: true
+  web: true
+  delegation: true
+
+gateway:
+  type: telegram
+  bot_token_env: TELEGRAM_BOT_TOKEN_INVESTIGATOR
+  chat_id_env: TELEGRAM_CHAT_ID_INVESTIGATOR
+
+allowed_clickhouse_tables:
+  - metrics_1m
+  - metrics_5m
+  - metrics_1h
+  - otel_logs
+  - otel_traces
+  - exemplars
+
+readonly: true

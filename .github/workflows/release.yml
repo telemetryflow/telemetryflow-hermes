@@ -1,0 +1,229 @@
+# =============================================================================
+# TelemetryFlow Hermes - Release Workflow
+# =============================================================================
+#
+# TelemetryFlow Hermes - Community Enterprise Observability Platform (CEOP)
+# Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
+#
+# This workflow builds and releases TelemetryFlow Hermes:
+# - Source distribution (Python scripts, no binary build needed)
+# - GitHub Release with checksums
+#
+# Triggers:
+# - Push tags matching v*.*.*
+# - Manual workflow dispatch
+#
+# =============================================================================
+
+name: Release - TelemetryFlow Hermes
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g., 2.0.0)"
+        required: true
+        default: "2.0.0"
+      prerelease:
+        description: "Mark as pre-release"
+        required: false
+        type: boolean
+        default: false
+
+env:
+  PYTHON_VERSION: "3.12"
+  PRODUCT_NAME: TelemetryFlow Hermes
+  VENDOR: Telemetri Data Indonesia
+
+permissions:
+  contents: write
+
+jobs:
+  # ===========================================================================
+  # Prepare Release
+  # ===========================================================================
+  prepare:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      commit: ${{ steps.version.outputs.commit }}
+      branch: ${{ steps.version.outputs.branch }}
+      build_time: ${{ steps.version.outputs.build_time }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "commit=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "branch=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_OUTPUT
+          echo "build_time=$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+
+  # ===========================================================================
+  # Build Source Archive
+  # ===========================================================================
+  build:
+    name: Build Release Archive
+    runs-on: ubuntu-latest
+    needs: prepare
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install CI dependencies
+        run: make ci-deps
+
+      - name: Run test suite
+        run: make ci-test
+
+      - name: Create release archive
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          RELEASE_NAME="telemetryflow-hermes-${VERSION}"
+          mkdir -p "release/${RELEASE_NAME}"
+
+          cp -r plugins "release/${RELEASE_NAME}/"
+          cp -r profiles "release/${RELEASE_NAME}/"
+          cp -r skills "release/${RELEASE_NAME}/"
+          cp -r scripts "release/${RELEASE_NAME}/"
+          cp -r hooks "release/${RELEASE_NAME}/"
+          cp -r security "release/${RELEASE_NAME}/"
+          cp -r cron "release/${RELEASE_NAME}/"
+          cp -r tests "release/${RELEASE_NAME}/"
+          cp pyproject.toml Makefile config.yaml README.md SOUL.md .env.example "release/${RELEASE_NAME}/" 2>/dev/null || true
+          cp .gitignore "release/${RELEASE_NAME}/" 2>/dev/null || true
+
+          cd release
+          tar -czvf "${RELEASE_NAME}.tar.gz" "${RELEASE_NAME}"
+          sha256sum "${RELEASE_NAME}.tar.gz" > checksums-sha256.txt
+          cat checksums-sha256.txt
+
+      - name: Upload archive artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-archive
+          path: release/
+          retention-days: 7
+
+  # ===========================================================================
+  # Create GitHub Release
+  # ===========================================================================
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [prepare, build]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download release archive
+        uses: actions/download-artifact@v4
+        with:
+          name: release-archive
+          path: release/
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p final-release
+          find release/ -type f \( -name "*.tar.gz" -o -name "*.txt" \) -exec cp {} final-release/ \;
+          ls -la final-release/
+
+      - name: Create tag if not exists (workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          TAG_NAME="v${{ needs.prepare.outputs.version }}"
+          if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+            git push origin "$TAG_NAME"
+            echo "Created tag: $TAG_NAME"
+          else
+            echo "Tag $TAG_NAME already exists"
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "${{ env.PRODUCT_NAME }} v${{ needs.prepare.outputs.version }}"
+          tag_name: "v${{ needs.prepare.outputs.version }}"
+          draft: false
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.prerelease == 'true' }}
+          generate_release_notes: true
+          files: |
+            final-release/*
+          body: |
+            ## ${{ env.PRODUCT_NAME }} v${{ needs.prepare.outputs.version }}
+
+            ### Installation
+
+            ```bash
+            tar -xzf telemetryflow-hermes-${{ needs.prepare.outputs.version }}.tar.gz
+            cd telemetryflow-hermes-${{ needs.prepare.outputs.version }}
+            make setup
+            ```
+
+            ### Features
+
+            | Feature | Description |
+            |---------|-------------|
+            | Plugin Tools | 37 observability tools covering all 20 TFO modules |
+            | Dependencies | Python stdlib only (zero external deps) |
+            | Python | 3.10+ compatible |
+            | Profiles | 4 agent profiles (triage, investigator, reviewer, remediator) |
+            | Skills | 29 skills across 18 categories |
+            | Pipeline | Multi-agent: Triage → Investigate → Review → Remediate |
+
+            ### Verification
+
+            Verify downloads using SHA256 checksums in `checksums-sha256.txt`.
+
+            ---
+
+            [Documentation](https://docs.telemetryflow.id) | [Report Issues](https://github.com/telemetryflow/telemetryflow-hermes/issues)
+
+  # ===========================================================================
+  # Summary
+  # ===========================================================================
+  summary:
+    name: Release Summary
+    runs-on: ubuntu-latest
+    needs: [prepare, release]
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "## ${{ env.PRODUCT_NAME }} - Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version** | v${{ needs.prepare.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | ${{ needs.prepare.outputs.commit }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branch** | ${{ needs.prepare.outputs.branch }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Build Time** | ${{ needs.prepare.outputs.build_time }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Status" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.release.result }} |" >> $GITHUB_STEP_SUMMARY

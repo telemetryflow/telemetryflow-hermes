@@ -1,0 +1,31 @@
+.env
+*.db
+*.log
+state.db
+sessions/
+logs/
+.archive/
+__pycache__/
+*.pyc
+.DS_Store
+*.tar.gz
+auth.json
+cron/output/
+
+# Test / CI artifacts
+.coverage
+htmlcov/
+coverage.xml
+coverage-unit.xml
+coverage-integration.xml
+junit.xml
+junit-unit.xml
+junit-integration.xml
+bandit-results.sarif
+.pytest_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -1,0 +1,55 @@
+{
+  "jobs": [
+    {
+      "id": "health-check-metrics",
+      "profile": "investigator",
+      "schedule": "every 15m",
+      "task": "Check TelemetryFlow ClickHouse metrics_5m for anomaly spikes in cpu, memory, and error rate across all services. Report any service exceeding 2x baseline.",
+      "enabled": true,
+      "skill": "clickhouse-query-patterns",
+      "output_dir": "cron/output/"
+    },
+    {
+      "id": "log-error-sweep",
+      "profile": "investigator",
+      "schedule": "every 30m",
+      "task": "Search otel_logs for new ERROR patterns in the last 30 minutes. Compare with MEMORY.md known patterns. Report only genuinely new error types.",
+      "enabled": true,
+      "output_dir": "cron/output/"
+    },
+    {
+      "id": "k8s-health-check",
+      "profile": "investigator",
+      "schedule": "every 10m",
+      "task": "Check Kubernetes pod health via TFO API. Look for CrashLoopBackOff, OOMKilled, ImagePullBackOff pods. Cross-reference with MEMORY.md known issues.",
+      "enabled": true,
+      "skill": "k8s-pod-debug",
+      "output_dir": "cron/output/"
+    },
+    {
+      "id": "db-slow-query-check",
+      "profile": "investigator",
+      "schedule": "every 1h",
+      "task": "Query TFO QAN for slow queries (>200ms) across all monitored databases. Report top 5 slowest by p95 duration.",
+      "enabled": true,
+      "skill": "slow-query-detection",
+      "output_dir": "cron/output/"
+    },
+    {
+      "id": "alert-fatigue-review",
+      "profile": "triage",
+      "schedule": "every 6h",
+      "task": "Review alert firing patterns from the last 6 hours. Identify noise alerts firing >10 times. Suggest suppression rules for known patterns in MEMORY.md.",
+      "enabled": true,
+      "output_dir": "cron/output/"
+    },
+    {
+      "id": "skill-curator",
+      "profile": "default",
+      "schedule": "every 7d",
+      "task": "Run Hermes Curator to review agent-created skills. Archive unused skills, consolidate overlapping ones.",
+      "enabled": true,
+      "output_dir": "cron/output/"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+model:
+  default: "glm-5.1"
+  provider: "opencode-go"
+
+agent:
+  max_turns: 30
+
+terminal:
+  backend: local
+  timeout: 120
+
+delegation:
+  max_iterations: 10
+  max_concurrent_children: 1
+
+tools:
+  terminal: true
+  web: true
+  delegation: true
+
+gateway:
+  type: telegram
+  bot_token_env: TELEGRAM_BOT_TOKEN_TRIAGE
+  chat_id_env: TELEGRAM_CHAT_ID_TRIAGE
+
+allowed_clickhouse_tables:
+  - metrics_1m
+  - otel_logs
+  - alert_rules
+
+readonly: true

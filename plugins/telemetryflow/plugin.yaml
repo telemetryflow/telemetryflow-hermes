@@ -1,0 +1,291 @@
+name: telemetryflow
+version: 3.0.0
+description: >
+  Full TelemetryFlow observability platform integration for Hermes Agent.
+  Covers all 20 TFO Platform modules: core telemetry (metrics, logs, traces),
+  Kubernetes/EKS monitoring, VM & Agent monitoring, Database monitoring (15+ types),
+  Uptime & Status Pages, Service Map, Network Map, AI Intelligence (4 sub-modules),
+  Alerting, Dashboards, Reporting, Data Retention, IAM, SSO, Tenancy,
+  Subscriptions, Audit Trails, TFQL Query Engine, and LLM Provider Management.
+author: TelemetryFlow
+
+tools:
+  # ── Core Telemetry (ClickHouse) ──
+  - name: query_metrics
+    description: Query TelemetryFlow metrics via ClickHouse materialized views (metrics_1m/5m/1h)
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/query_metrics.py"]
+
+  - name: search_logs
+    description: Search TelemetryFlow otel_logs with severity filtering and full-text search
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/search_logs.py"]
+
+  - name: list_traces
+    description: List and analyze distributed traces (waterfall, slow spans) from TelemetryFlow
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/list_traces.py"]
+
+  - name: get_exemplars
+    description: Get exemplars linking metrics to specific traces for context-aware debugging
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/get_exemplars.py"]
+
+  - name: query_correlations
+    description: Query signal_correlations_1h for cross-signal correlation analysis
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/query_correlations.py"]
+
+  # ── TFQL Unified Query Engine ──
+  - name: query_tfql
+    description: >
+      Unified query engine for all three telemetry signals (metrics, logs, traces).
+      Supports metric names/labels discovery, log severity distribution, trace
+      summaries/services/operations, and full TFQL queries.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/query_tfql.py"]
+
+  # ── Kubernetes / EKS Monitoring ──
+  - name: check_k8s
+    description: >
+      Check K8s/EKS cluster health: overview, stats, clusters, nodes, namespaces,
+      pods, deployments, PV/PVC, services, ingresses. Covers API Server and CoreDNS metrics.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/check_k8s.py"]
+
+  # ── VM Monitoring ──
+  - name: check_vm
+    description: >
+      Check VM inventory, heartbeat status, and per-VM metrics (CPU, memory, disk, network).
+      Supports multi-cloud providers (AWS, GCP, Azure, on-prem).
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/check_vm.py"]
+
+  # ── Agent / Infrastructure Monitoring ──
+  - name: check_agent
+    description: >
+      Check TFO Agent status: list agents, get stats, health history, system metrics.
+      Covers agent registration, heartbeat monitoring, and version tracking.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/check_agent.py"]
+
+  # ── Infrastructure Monitoring (legacy alias) ──
+  - name: check_infra
+    description: Check infrastructure health (overview, cpu, memory, storage, network) via vm_metrics_1h
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/check_infra.py"]
+
+  # ── Uptime & Status Pages ──
+  - name: check_uptime
+    description: >
+      Full uptime monitoring: HTTP/HTTPS/TCP monitors, check history, uptime stats
+      (24h/7d/30d/90d), response time percentiles, SSL certificate tracking,
+      status pages, incidents, subscribers.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/check_uptime.py"]
+
+  # ── Service Map ──
+  - name: check_service_map
+    description: >
+      Service dependency map auto-discovered from OTEL traces and K8s.
+      Topology visualization, health scores, trace-based metrics, dependency analysis.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/check_service_map.py"]
+
+  # ── Network Map ──
+  - name: check_network_map
+    description: >
+      Network topology: eBPF flows, SNMP polling (v1/v2c/v3), DNS observations,
+      K8s pod-to-pod flows, traceroute paths. Traffic analytics and node connections.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/check_network_map.py"]
+
+  # ── Database Monitoring (15+ types) ──
+  - name: check_db_monitoring
+    description: >
+      Database monitoring for 15+ engines: PostgreSQL, MySQL, MariaDB, Percona,
+      ClickHouse, MongoDB Community/Atlas, MSSQL, SQLite3, TimescaleDB, Aurora,
+      AWS RDS MySQL/Aurora/PostgreSQL, DynamoDB, CockroachDB. Includes QAN and engine-specific metrics.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/check_db_monitoring.py"]
+
+  # ── AI Intelligence (4 modules) ──
+  - name: query_ai_intelligence
+    description: >
+      AI Intelligence: anomaly-detection (LLM-powered analysis), predictive-maintenance
+      (ML failure prediction), corrective-maintenance (remediation plans with lifecycle),
+      cost-optimization (cloud cost analysis and recommendations).
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/query_ai_intelligence.py"]
+
+  # ── Alerting ──
+  - name: manage_alerts
+    description: >
+      Alert management: rules (TFQL conditions, severity, evaluation), instances
+      (lifecycle: firing/acknowledged/resolved/silenced), notification channels,
+      alert statistics, TFQL validation.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/manage_alerts.py"]
+
+  # ── Dashboards ──
+  - name: manage_dashboards
+    description: >
+      Dashboard management: CRUD, widgets, variables, import/export,
+      sharing, public dashboards, templates, shared graphs.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/manage_dashboards.py"]
+
+  # ── Reporting ──
+  - name: manage_reports
+    description: >
+      Report management: definitions (scheduled multi-section reports), executions,
+      generation (utilization, reliability, alerting, uptime sections), email delivery.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/manage_reports.py"]
+
+  # ── Data Retention ──
+  - name: manage_retention
+    description: >
+      Data retention policies for logs, metrics, traces, alerts, exemplars.
+      Enforcement, archive support, real data volume statistics from ClickHouse.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/manage_retention.py"]
+
+  # ── IAM ──
+  - name: manage_iam
+    description: >
+      Identity and Access Management: users, roles, permissions, groups,
+      role/permission assignments, MFA status, IAM audit logs.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/manage_iam.py"]
+
+  # ── SSO ──
+  - name: manage_sso
+    description: >
+      SSO provider management: OAuth2 providers, user connections,
+      public provider listing, JIT user provisioning status.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/manage_sso.py"]
+
+  # ── Tenancy ──
+  - name: manage_tenancy
+    description: >
+      Multi-tenancy: regions (data residency), tenants, organizations,
+      workspaces. Hierarchical tenant management with auto-provisioning.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/manage_tenancy.py"]
+
+  # ── Audit Trails ──
+  - name: query_audit
+    description: >
+      Audit trail queries: AUTH, AUTHZ, DATA, SYSTEM event types.
+      User activity, IP tracking, resource access, compliance logging.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/query_audit.py"]
+
+  # ── Subscription ──
+  - name: query_subscription
+    description: >
+      Subscription management: plans, current subscription, usage tracking
+      (13 metric types with real ClickHouse volumes), invoices, billing cycles.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/query_subscription.py"]
+
+  # ── Platform Management (legacy alias) ──
+  - name: query_platform
+    description: >
+      Platform management queries: IAM, Tenancy, Audit, Retention, Subscriptions, API Keys, Notifications.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/query_platform.py"]
+
+  # ── Account ──
+  - name: query_account
+    description: Query account-scoped data: profile, security, sessions, preferences
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/query_account.py"]
+
+  # ── Data Masking ──
+  - name: manage_data_masking
+    description: Manage PII data masking policies (list, get, create, toggle)
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/manage_data_masking.py"]
+
+  # ── LLM Chat (with ContextCollector) ──
+  - name: chat_with_context
+    description: >
+      Send a chat message to TFO LLM with automatic telemetry context injection
+      via ContextCollector (95+ context types). Uses /api/v2/llm/chat/message.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/chat_with_context.py"]
+
+  - name: stream_chat
+    description: Send a streaming chat message (SSE) to TFO LLM with context injection
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/stream_chat.py"]
+
+  # ── Conversation Management ──
+  - name: manage_conversation
+    description: Manage TFO LLM conversations (list, get, archive, delete)
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/manage_conversation.py"]
+
+  # ── AI Insights ──
+  - name: generate_insight
+    description: >
+      Generate AI insight via /api/v2/llm/insights endpoints.
+      Types: root-cause, chronology, prediction, recommendation, pattern.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/generate_insight.py"]
+
+  # ── LLM Usage Analytics ──
+  - name: query_llm_usage
+    description: >
+      Query LLM usage analytics from ClickHouse: summary, by-provider, by-model,
+      by-context, top-users, interval trends (5m/15m/6h views).
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/query_llm_usage.py"]
+
+  # ── LLM Provider Management ──
+  - name: manage_provider
+    description: >
+      Manage TFO LLM providers (15 types): anthropic, openai, google, deepseek,
+      qwen, ollama, mistral, grok, kimi, zhipu, mimo, openrouter, custom.
+      Actions: list, get, create, validate, test-key, set-default.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/manage_provider.py"]
+
+  # ── Remediation (gated) ──
+  - name: scale_deployment
+    description: Scale a Kubernetes deployment (requires human approval)
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/scale_deployment.py"]
+    requires_approval: true
+
+  - name: restart_pod
+    description: Restart Kubernetes pods (requires human approval)
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/restart_pod.py"]
+    requires_approval: true
+
+  - name: rollback_deploy
+    description: Rollback a Kubernetes deployment (requires human approval)
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/rollback_deploy.py"]
+    requires_approval: true
+
+  - name: update_alert
+    description: Update a TelemetryFlow alert rule (requires human approval)
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/update_alert.py"]
+    requires_approval: true
+
+environment:
+  TELEMETRYFLOW_API_URL:
+    description: TelemetryFlow API base URL (default http://localhost:3000/api/v2)
+    required: true
+  TELEMETRYFLOW_API_KEY:
+    description: TelemetryFlow API key for JWT Bearer authentication
+    required: true
+  TELEMETRYFLOW_WORKSPACE_ID:
+    description: Default workspace ID for ClickHouse queries
+    required: false

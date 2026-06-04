@@ -1,0 +1,223 @@
+# =============================================================================
+# TelemetryFlow Hermes - GitLab CI/CD Pipeline
+# =============================================================================
+#
+# TelemetryFlow Hermes - Community Enterprise Observability Platform (CEOP)
+# Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
+#
+# Stages: lint → test → security → coverage → release
+#
+# =============================================================================
+
+stages:
+  - lint
+  - test
+  - security
+  - coverage
+  - release
+
+variables:
+  PYTHON_VERSION: "3.12"
+  PRODUCT_NAME: "TelemetryFlow Hermes"
+  VERSION: "2.0.0"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+default:
+  image: python:${PYTHON_VERSION}-slim
+  before_script:
+    - pip install --upgrade pip
+
+cache:
+  key:
+    files:
+      - pyproject.toml
+  paths:
+    - .cache/pip
+
+# =============================================================================
+# Lint
+# =============================================================================
+
+lint:
+  stage: lint
+  script:
+    - make ci-deps
+    - make ci-lint
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - changes:
+        - plugins/**/*
+        - tests/**/*
+        - pyproject.toml
+        - Makefile
+
+# =============================================================================
+# Test (Python 3.10, 3.11, 3.12, 3.13)
+# =============================================================================
+
+test:3.10:
+  stage: test
+  image: python:3.10-slim
+  needs: [lint]
+  script:
+    - make ci-deps
+    - make ci-test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - changes:
+        - plugins/**/*
+        - tests/**/*
+        - pyproject.toml
+        - Makefile
+
+test:3.11:
+  stage: test
+  image: python:3.11-slim
+  needs: [lint]
+  script:
+    - make ci-deps
+    - make ci-test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - changes:
+        - plugins/**/*
+        - tests/**/*
+        - pyproject.toml
+        - Makefile
+
+test:3.12:
+  stage: test
+  image: python:3.12-slim
+  needs: [lint]
+  script:
+    - make ci-deps
+    - make ci-test
+  artifacts:
+    when: always
+    paths:
+      - coverage.xml
+      - junit.xml
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+      junit: junit.xml
+    expire_in: 7 days
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - changes:
+        - plugins/**/*
+        - tests/**/*
+        - pyproject.toml
+        - Makefile
+
+test:3.13:
+  stage: test
+  image: python:3.13-slim
+  needs: [lint]
+  script:
+    - make ci-deps
+    - make ci-test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - changes:
+        - plugins/**/*
+        - tests/**/*
+        - pyproject.toml
+        - Makefile
+
+# =============================================================================
+# Security
+# =============================================================================
+
+security:
+  stage: security
+  needs: [lint]
+  script:
+    - make ci-deps
+    - make ci-security
+  artifacts:
+    when: always
+    paths:
+      - bandit-results.sarif
+    expire_in: 7 days
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - changes:
+        - plugins/**/*
+        - tests/**/*
+        - pyproject.toml
+        - Makefile
+
+# =============================================================================
+# Coverage
+# =============================================================================
+
+coverage:
+  stage: coverage
+  needs: ["test:3.12"]
+  script:
+    - make ci-deps
+    - make ci-coverage
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  artifacts:
+    when: always
+    paths:
+      - htmlcov/
+      - coverage.xml
+    expire_in: 7 days
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop"
+    - changes:
+        - plugins/**/*
+        - tests/**/*
+        - pyproject.toml
+        - Makefile
+
+# =============================================================================
+# Release
+# =============================================================================
+
+release:
+  stage: release
+  needs: [coverage, security]
+  script:
+    - VERSION="${CI_COMMIT_TAG#v}"
+    - RELEASE_NAME="telemetryflow-hermes-${VERSION}"
+    - mkdir -p "release/${RELEASE_NAME}"
+    - cp -r plugins profiles skills scripts hooks security cron tests "release/${RELEASE_NAME}/"
+    - cp pyproject.toml Makefile config.yaml README.md SOUL.md .env.example "release/${RELEASE_NAME}/" 2>/dev/null || true
+    - cd release
+    - tar -czvf "${RELEASE_NAME}.tar.gz" "${RELEASE_NAME}"
+    - sha256sum "${RELEASE_NAME}.tar.gz" > checksums-sha256.txt
+  artifacts:
+    paths:
+      - release/*.tar.gz
+      - release/checksums-sha256.txt
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: "${PRODUCT_NAME} ${CI_COMMIT_TAG}"
+    description: |
+      ${PRODUCT_NAME} ${CI_COMMIT_TAG}
+
+      ### Installation
+      ```
+      tar -xzf telemetryflow-hermes-*.tar.gz
+      cd telemetryflow-hermes-*
+      make setup
+      ```
+
+      ### Features
+      - 23 plugin tools for observability
+      - Python stdlib only (no external dependencies)
+      - Python 3.10+ compatible
