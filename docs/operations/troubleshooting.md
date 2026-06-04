@@ -48,7 +48,7 @@ echo $TELEMETRYFLOW_API_KEY | head -c 10
 | Cause | Fix |
 |-------|-----|
 | Wrong URL | Update `TELEMETRYFLOW_API_URL` in `~/.hermes/.env` |
-| TFO Platform down | Start the platform: `docker compose up -d` |
+| TFO Platform down | Start the platform: `./run-container.sh --up --profile core` or `docker compose --profile core up -d` |
 | Firewall blocking | Open port 3000 (or your configured port) |
 | SSL certificate error | Use `http://` for local, verify cert for remote |
 

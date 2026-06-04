@@ -11,10 +11,10 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python)](https://www.python.org/)
 [![Hermes](https://img.shields.io/badge/Hermes-Agent-00d4aa)](https://github.com/NousResearch/hermes-agent)
-[![Tests](https://img.shields.io/badge/Tests-105%20passing-brightgreen.svg)](tests/)
-[![Coverage](https://img.shields.io/badge/Coverage-95%25+-brightgreen.svg)](tests/)
-[![Tools](https://img.shields.io/badge/Tools-23%20Plugin-blueviolet)](plugins/telemetryflow/plugin.yaml)
-[![ContextTypes](https://img.shields.io/badge/ContextTypes-95+-9cf)](docs/api/context-types.md)
+[![Tests](https://img.shields.io/badge/Tests-458%20passing-brightgreen.svg)](tests/)
+[![Coverage](https://img.shields.io/badge/Coverage-97%25-brightgreen.svg)](tests/)
+[![Tools](https://img.shields.io/badge/Tools-37%20Plugin-blueviolet)](plugins/telemetryflow/plugin.yaml)
+[![ContextTypes](https://img.shields.io/badge/ContextTypes-74-9cf)](docs/api/context-types.md)
 [![ClickHouse](https://img.shields.io/badge/ClickHouse-Readonly-FFCC00?logo=clickhouse)](security/clickhouse-readonly.sql)
 [![Docs](https://img.shields.io/badge/Docs-28%20Pages-informational)](docs/)
 
@@ -82,19 +82,25 @@ make ci-pipeline
 
 ```
 telemetryflow-hermes/
-├── plugins/telemetryflow/tools/    # Tool implementations (Python stdlib only)
+├── plugins/telemetryflow/tools/    # 37 tool implementations (Python stdlib only)
 ├── profiles/                       # Agent profiles (triage, investigator, reviewer, remediator)
-├── skills/                         # Skill definitions (observability, database-monitoring)
-├── tests/                          # Test suite (105 tests, 95%+ coverage)
+├── skills/                         # 29 skills across 18 categories
+├── tests/                          # Test suite (458 tests, 97% coverage)
 │   ├── conftest.py                 # Shared fixtures
 │   ├── mocks/                      # Mock objects (MockTFOApi, response factories)
-│   ├── unit/                       # Unit tests per tool
+│   ├── unit/                       # Unit tests per tool (34 files)
 │   └── integration/                # Integration tests
-├── docs/                           # Documentation wiki (28 pages)
+├── docs/                           # Documentation wiki (28+ pages)
 ├── cron/                           # Scheduled investigation jobs
 ├── scripts/                        # Deployment scripts
 ├── security/                       # ClickHouse read-only SQL
-└── hooks/                          # Lifecycle hooks
+├── hooks/                          # Lifecycle hooks
+├── Dockerfile                      # Multi-stage Docker (python:3.13-slim-trixie)
+├── docker-compose.yaml             # 4 profiles: core, monitoring, tools, all
+├── run-container.sh                # Build, tag, push, compose orchestration
+├── Makefile                        # fmt, lint, test, build, ci targets
+├── pyproject.toml                  # pytest, ruff, coverage config
+└── .github/workflows/              # CI (ci.yml), Docker (docker.yml), Release (release.yml)
 ```
 
 ## Making Changes

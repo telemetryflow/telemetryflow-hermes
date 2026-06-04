@@ -1,6 +1,6 @@
 # Skill Reference
 
-Detailed procedures for all 11 bundled skills.
+Detailed procedures for all 29 bundled skills across 18 categories.
 
 ---
 
@@ -194,7 +194,7 @@ graph LR
 | `/api/v2/llm/insights/generate`  | POST     | Generate insight          |
 | `/api/v2/llm/providers`          | GET/POST | Manage providers          |
 
-**Context Types**: 95+ values — see [Context Types](../api/context-types.md)
+**Context Types**: 74 values — see [Context Types](../api/context-types.md)
 
 **Insight Types**: `chronology`, `prediction`, `recommendation`, `root-cause`, `pattern`
 

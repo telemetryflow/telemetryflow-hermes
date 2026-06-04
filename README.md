@@ -11,10 +11,10 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python)](https://www.python.org/)
 [![Hermes](https://img.shields.io/badge/Hermes-Agent-00d4aa)](https://github.com/NousResearch/hermes-agent)
-[![Tests](https://img.shields.io/badge/Tests-105%20passing-brightgreen.svg)](tests/)
-[![Coverage](https://img.shields.io/badge/Coverage-95%25+-brightgreen.svg)](tests/)
-[![Tools](https://img.shields.io/badge/Tools-23%20Plugin-blueviolet)](plugins/telemetryflow/plugin.yaml)
-[![ContextTypes](https://img.shields.io/badge/ContextTypes-95+-9cf)](docs/api/context-types.md)
+[![Tests](https://img.shields.io/badge/Tests-458%20passing-brightgreen.svg)](tests/)
+[![Coverage](https://img.shields.io/badge/Coverage-97%25-brightgreen.svg)](tests/)
+[![Tools](https://img.shields.io/badge/Tools-37%20Plugin-blueviolet)](plugins/telemetryflow/plugin.yaml)
+[![ContextTypes](https://img.shields.io/badge/ContextTypes-74-9cf)](docs/api/context-types.md)
 [![ClickHouse](https://img.shields.io/badge/ClickHouse-Readonly-FFCC00?logo=clickhouse)](security/clickhouse-readonly.sql)
 [![Docs](https://img.shields.io/badge/Docs-28%20Pages-informational)](docs/)
 
@@ -41,25 +41,28 @@ Alert Fired → Triage → Investigator → Reviewer → Remediator → Human Ap
 - **Reviewer Agent** — Independent verification in a separate context with zero investigation bias (read-only tools)
 - **Remediator Agent** — Proposes gated remediation actions (scale, restart, rollback, update_alert) with human-in-the-loop approval
 
-### TelemetryFlow Integration (23 Tools)
+### TelemetryFlow Integration (37 Tools — All 20 TFO Modules)
 
 - **Core Telemetry** (5) — query_metrics, search_logs, list_traces, get_exemplars, query_correlations
-- **Infrastructure** (3) — check_k8s, check_infra, check_db_monitoring (16 DB types)
-- **Platform** (5) — check_uptime, query_ai_intelligence, query_platform, query_account, manage_data_masking
-- **LLM Module** (6) — chat_with_context, stream_chat, manage_conversation, generate_insight, query_llm_usage, manage_provider
-- **Remediation** (4) — scale_deployment, restart_pod, rollback_deploy, update_alert (all gated)
+- **Monitoring** (8) — check_k8s, check_infra, check_uptime, check_vm, check_agent, check_service_map, check_network_map, check_db_monitoring (16 DB types)
+- **AI & LLM** (7) — chat_with_context, stream_chat, manage_conversation, generate_insight, query_llm_usage, manage_provider, query_ai_intelligence
+- **Platform** (8) — query_platform, query_account, query_audit, query_subscription, manage_dashboards, manage_alerts, manage_reports, manage_data_masking
+- **Infrastructure** (6) — manage_retention, manage_tenancy, manage_iam, manage_sso, query_tfql, check_uptime (expanded)
+- **Remediation** (3+1) — scale_deployment, restart_pod, rollback_deploy (all gated) + update_alert
 
 ### TFO LLM Module Support
 
-- **95+ ContextType values** — all context types from TFO's ContextCollector (4,440 lines)
+- **74 ContextType values** — all context types from TFO's ContextCollector (4,440 lines)
 - **15 LLM Provider types** — anthropic, openai, google, gemini, deepseek, qwen, ollama, mistral, grok, kimi, zhipu, mimo, openrouter, custom
 - **5 Insight types** — chronology, prediction, recommendation, root-cause, pattern
 - **7 Adapter classes** — Claude, OpenAI, Gemini, DeepSeek, Qwen, Ollama, Custom
 
-### Self-Improving Skills (11 Bundled)
+### Self-Improving Skills (29 Bundled, 18 Categories)
 
-- **Observability** (9) — k8s-pod-debug, payments-api-oom-rca, clickhouse-query-patterns, tfql-natural-language, alert-triage, remediation-gate, cross-signal-correlation, memory-pressure-investigation, tfo-llm-api
-- **Database Monitoring** (2) — slow-query-detection, qan-analysis
+- **Monitoring (8)** — k8s-pod-debug, uptime, vm, agent, kubernetes, service-map, network-map, db-monitoring
+- **Observability (9)** — payments-api-oom-rca, clickhouse-query-patterns, tfql-natural-language, alert-triage, remediation-gate, cross-signal-correlation, memory-pressure-investigation, tfo-llm-api, db-monitoring-analysis
+- **Platform (10)** — alert-management, dashboard-management, report-automation, retention-management, audit-compliance, subscription-management, tenancy-administration, iam-administration, sso-configuration, tfql-query
+- **Database Monitoring (2)** — slow-query-detection, qan-analysis
 - Skills auto-evolve through investigation experience (GEPA optimization available offline)
 
 ### Cost Optimization
@@ -91,7 +94,7 @@ graph TB
         M["Remediator<br/>glm-5.1"]
     end
 
-    subgraph Tools["Plugin Tools (23)"]
+    subgraph Tools["Plugin Tools (37)"]
         direction LR
         MT["Metrics · Logs · Traces · Exemplars"]
         K8["K8s · Infra · DB Monitoring"]
@@ -181,15 +184,34 @@ telemetryflow-hermes/
 │   ├── reviewer/                        #   glm-5.1 · max_turns=20 · readonly
 │   └── remediator/                      #   glm-5.1 · max_turns=15 · require_approval
 │
-├── skills/                              # 11 bundled skills
+├── skills/                              # 29 bundled skills (18 categories)
+│   ├── monitoring/                      #   8 monitoring skills
+│   │   ├── uptime/
+│   │   ├── vm/
+│   │   ├── agent/
+│   │   ├── kubernetes/
+│   │   ├── service-map/
+│   │   ├── network-map/
+│   │   └── ...
 │   ├── observability/                   #   9 observability skills
-│   └── database-monitoring/             #   2 DB monitoring skills
+│   ├── database-monitoring/             #   2 DB monitoring skills
+│   ├── alerting/                        #   alert-management
+│   ├── dashboard/                       #   dashboard-management
+│   ├── reporting/                       #   report-automation
+│   ├── retention/                       #   retention-management
+│   ├── audit/                           #   audit-compliance
+│   ├── subscription/                    #   subscription-management
+│   ├── tenancy/                         #   tenancy-administration
+│   ├── iam/                             #   iam-administration
+│   ├── sso/                             #   sso-configuration
+│   ├── query/                           #   tfql-query
+│   └── ai-intelligence/                 #   ai-intelligence
 │
 ├── plugins/                             # TelemetryFlow plugin
 │   └── telemetryflow/
-│       ├── plugin.yaml                  #   v2.0.0 — 23 tools
-│       └── tools/                       #   23 Python tools (stdlib only)
-│           ├── _shared.py               #     API helpers, type constants
+│       ├── plugin.yaml                  #   v3.0.0 — 37 tools
+│       └── tools/                       #   37 Python tools (stdlib only)
+│           ├── _shared.py               #     API helpers, type constants (74 ContextTypes)
 │           ├── query_metrics.py
 │           ├── search_logs.py
 │           ├── list_traces.py
@@ -197,6 +219,10 @@ telemetryflow-hermes/
 │           ├── query_correlations.py
 │           ├── check_k8s.py
 │           ├── check_infra.py
+│           ├── check_vm.py
+│           ├── check_agent.py
+│           ├── check_service_map.py
+│           ├── check_network_map.py
 │           ├── check_db_monitoring.py
 │           ├── check_uptime.py
 │           ├── query_ai_intelligence.py
@@ -209,6 +235,16 @@ telemetryflow-hermes/
 │           ├── generate_insight.py
 │           ├── query_llm_usage.py
 │           ├── manage_provider.py
+│           ├── manage_alerts.py
+│           ├── manage_dashboards.py
+│           ├── manage_reports.py
+│           ├── manage_retention.py
+│           ├── manage_iam.py
+│           ├── manage_sso.py
+│           ├── manage_tenancy.py
+│           ├── query_audit.py
+│           ├── query_subscription.py
+│           ├── query_tfql.py
 │           ├── scale_deployment.py       #   ⚠ requires_approval
 │           ├── restart_pod.py            #   ⚠ requires_approval
 │           ├── rollback_deploy.py        #   ⚠ requires_approval
@@ -218,10 +254,10 @@ telemetryflow-hermes/
 ├── scripts/                             # 5 deployment scripts
 ├── security/                            # ClickHouse read-only user (20 tables)
 ├── hooks/                               # 3 lifecycle hooks
-├── tests/                               # 105 tests, 95%+ coverage
+├── tests/                               # 458 tests, 97% coverage
 │   ├── conftest.py
 │   ├── mocks/
-│   ├── unit/                            # 21 tool test files
+│   ├── unit/                            # 34 tool test files
 │   └── integration/                     # Pipeline integration tests
 ├── docs/                                # 28-page documentation wiki
 │   ├── agents/                          # 5 agent docs
@@ -234,9 +270,13 @@ telemetryflow-hermes/
 │   └── operations/                      # Cron, hooks, troubleshooting
 │
 ├── .github/workflows/                   # GitHub Actions CI/CD
-│   ├── ci.yml                           #   lint → test → security → coverage
+│   ├── ci.yml                           #   lint → test-unit → test-integration → security → coverage
+│   ├── docker.yml                       #   Multi-platform Docker build (amd64/arm64)
 │   └── release.yml                      #   Tag-triggered release
-└── .gitlab-ci.yml                       # GitLab CI/CD pipeline
+├── .gitlab-ci.yml                       # GitLab CI/CD pipeline
+├── Dockerfile                           # Multi-stage Docker (python:3.13-slim-trixie)
+├── docker-compose.yaml                  # 4 profiles: core, monitoring, tools, all
+└── run-container.sh                     # Build, tag, push, compose orchestration
 ```
 
 ## Quick Start
@@ -346,9 +386,9 @@ make ci-pipeline
 | [Architecture](./docs/architecture.md)                       | System design, data flow, component diagrams        |
 | [Getting Started](./docs/getting-started.md)                 | Installation and first investigation                |
 | [Agents](./docs/agents/README.md)                            | Multi-agent team design                             |
-| [Tool Reference](./docs/tools/reference.md)                  | All 23 tools with parameters                        |
+| [Tool Reference](./docs/tools/reference.md)                  | All 37 tools with parameters                        |
 | [LLM Module](./docs/api/llm-module.md)                       | TFO LLM API integration (chat, insights, providers) |
-| [Context Types](./docs/api/context-types.md)                 | All 95+ ContextType values                          |
+| [Context Types](./docs/api/context-types.md)                 | All 74 ContextType values                           |
 | [Authentication](./docs/api/authentication.md)               | JWT, API Key, Ingestion auth flows                  |
 | [Environment Variables](./docs/configuration/environment.md) | Complete `.env` reference                           |
 | [Deployment](./docs/deployment/standard.md)                  | Standard and air-gapped deployment                  |
@@ -361,20 +401,22 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for de
 
 ## Project Statistics
 
-| Metric              | Count               |
-| ------------------- | ------------------- |
-| Agent Profiles      | 4                   |
-| Plugin Tools        | 23                  |
-| Bundled Skills      | 11                  |
-| Context Types       | 95+                 |
-| Provider Types      | 15                  |
-| Cron Jobs           | 6                   |
-| Lifecycle Hooks     | 3                   |
-| ClickHouse Tables   | 20 (read-only)      |
-| Documentation Pages | 28                  |
-| Test Methods        | 105                 |
-| Test Coverage       | 95%+                |
-| CI/CD Pipelines     | 2 (GitHub + GitLab) |
+| Metric              | Count                        |
+| ------------------- | ---------------------------- |
+| Agent Profiles      | 4                            |
+| Plugin Tools        | 37                           |
+| TFO Modules Covered | 20 (all)                     |
+| Bundled Skills      | 29                           |
+| Skill Categories    | 18                           |
+| Context Types       | 74                           |
+| Provider Types      | 15                           |
+| Cron Jobs           | 6                            |
+| Lifecycle Hooks     | 3                            |
+| ClickHouse Tables   | 20 (read-only)               |
+| Documentation Pages | 28+                          |
+| Test Methods        | 458                          |
+| Test Coverage       | 97%                          |
+| CI/CD Pipelines     | 3 (GitHub + Docker + GitLab) |
 
 ## License
 

@@ -19,8 +19,8 @@ graph TB
         H_CORE["AIAgent Core<br/>ReAct Loop"]
         H_SOUL["SOUL.md<br/>Identity"]
         H_MEM["Memory<br/>Tier 1 · Tier 2 · Tier 3"]
-        H_SKILLS["Skills<br/>11 Bundled · Auto-Evolved"]
-        H_PLUGIN["TelemetryFlow Plugin<br/>23 Tools"]
+        H_SKILLS["Skills<br/>29 Bundled · 18 Categories"]
+        H_PLUGIN["TelemetryFlow Plugin<br/>37 Tools"]
     end
 
     subgraph "Agent Team"
@@ -108,7 +108,7 @@ graph LR
         MEM["memories/<br/>MEMORY.md · USER.md"]
         PROFILES["profiles/<br/>triage · investigator · reviewer · remediator"]
         SKILLS["skills/<br/>observability/ · database-monitoring/"]
-        PLUGIN["plugins/telemetryflow/<br/>plugin.yaml + 23 tools"]
+        PLUGIN["plugins/telemetryflow/<br/>plugin.yaml + 37 tools"]
         CRON["cron/<br/>jobs.json (6 scheduled tasks)"]
         HOOKS["hooks/<br/>pre-investigation · post-remediation · on-alert-fired"]
         SEC["security/<br/>clickhouse-readonly.sql"]
@@ -138,7 +138,7 @@ graph LR
 | **LLM Providers**           | Anthropic, Zhipu (OpenCode Go), OpenRouter, Ollama | Model inference for different agent roles                |
 | **Observability**           | TelemetryFlow Platform                             | Metrics, Logs, Traces, Exemplars in ClickHouse           |
 | **Database**                | ClickHouse                                         | Columnar storage for all telemetry signals               |
-| **Plugin Runtime**          | Python 3 (stdlib only)                             | 23 tools using `urllib`, `json`, `sys`                   |
+| **Plugin Runtime**          | Python 3 (stdlib only)                             | 37 tools using `urllib`, `json`, `sys`                   |
 | **Communication**           | Telegram Bot API                                   | Human-in-the-loop notifications                          |
 | **Container Orchestration** | Kubernetes                                         | Pod/deployment management for remediation                |
 | **Security**                | JWT, API Keys (tfk*/tfs*), AES-256-GCM             | Authentication and encryption                            |
@@ -150,7 +150,11 @@ telemetryflow-hermes/
 ├── config.yaml                          # Default Hermes agent configuration
 ├── SOUL.md                              # Default agent identity
 ├── .env.example                         # API key template (3 auth methods)
-├── Makefile                             # Setup, deploy, verify targets
+├── Makefile                             # Setup, deploy, verify, CI targets
+├── pyproject.toml                       # Python project config (pytest, ruff, coverage)
+├── Dockerfile                           # Multi-stage Docker (python:3.13-slim-trixie)
+├── docker-compose.yaml                  # 4 profiles: core, monitoring, tools, all
+├── run-container.sh                     # Build, tag, push, compose orchestration
 │
 ├── profiles/                            # Multi-agent team (4 profiles)
 │   ├── triage/                          # Alert classifier
@@ -170,49 +174,83 @@ telemetryflow-hermes/
 │       ├── SOUL.md                      #   Remediation specialist identity
 │       └── memories/
 │
-├── skills/                              # 11 bundled skills
-│   ├── observability/                   # 9 observability skills
-│   │   ├── k8s-pod-debug/
-│   │   ├── payments-api-oom-rca/
-│   │   ├── clickhouse-query-patterns/
-│   │   ├── tfql-natural-language/
-│   │   ├── alert-triage/
-│   │   ├── remediation-gate/
-│   │   ├── cross-signal-correlation/
-│   │   ├── memory-pressure-investigation/
-│   │   └── tfo-llm-api/
-│   └── database-monitoring/             # 2 DB monitoring skills
-│       ├── slow-query-detection/
-│       └── qan-analysis/
+├── skills/                              # 29 bundled skills (18 categories)
+│   ├── monitoring/                      #   8 skills (uptime, vm, agent, k8s, service-map, network-map, ...)
+│   ├── observability/                   #   9 skills (k8s-pod-debug, payments-api-oom-rca, ...)
+│   ├── database-monitoring/             #   2 skills (slow-query-detection, qan-analysis)
+│   ├── alerting/                        #   alert-management
+│   ├── dashboard/                       #   dashboard-management
+│   ├── reporting/                       #   report-automation
+│   ├── retention/                       #   retention-management
+│   ├── audit/                           #   audit-compliance
+│   ├── subscription/                    #   subscription-management
+│   ├── tenancy/                         #   tenancy-administration
+│   ├── iam/                             #   iam-administration
+│   ├── sso/                             #   sso-configuration
+│   ├── query/                           #   tfql-query
+│   ├── ai-intelligence/                 #   ai-intelligence
+│   └── ...                              #   18 categories total
 │
 ├── plugins/                             # TelemetryFlow plugin
 │   └── telemetryflow/
-│       ├── plugin.yaml                  # v2.0.0 — 23 tools, 3 env vars
-│       └── tools/                       # Python tools (stdlib only)
-│           ├── _shared.py               # TFO API helpers, type constants
+│       ├── plugin.yaml                  # v3.0.0 — 37 tools
+│       └── tools/                       # 37 Python tools (stdlib only)
+│           ├── _shared.py               # TFO API helpers, 74 ContextTypes, 15 ProviderTypes
+│           │
+│           │ # ── Core Telemetry (5) ──
 │           ├── query_metrics.py
 │           ├── search_logs.py
 │           ├── list_traces.py
 │           ├── get_exemplars.py
 │           ├── query_correlations.py
+│           │
+│           │ # ── Monitoring (8) ──
 │           ├── check_k8s.py
 │           ├── check_infra.py
-│           ├── check_db_monitoring.py
 │           ├── check_uptime.py
-│           ├── query_ai_intelligence.py
-│           ├── query_platform.py
-│           ├── query_account.py
-│           ├── manage_data_masking.py
+│           ├── check_vm.py
+│           ├── check_agent.py
+│           ├── check_service_map.py
+│           ├── check_network_map.py
+│           ├── check_db_monitoring.py
+│           │
+│           │ # ── AI & LLM (7) ──
 │           ├── chat_with_context.py
 │           ├── stream_chat.py
 │           ├── manage_conversation.py
 │           ├── generate_insight.py
 │           ├── query_llm_usage.py
 │           ├── manage_provider.py
-│           ├── scale_deployment.py
-│           ├── restart_pod.py
-│           ├── rollback_deploy.py
-│           └── update_alert.py
+│           ├── query_ai_intelligence.py
+│           │
+│           │ # ── Platform (8) ──
+│           ├── query_platform.py
+│           ├── query_account.py
+│           ├── query_audit.py
+│           ├── query_subscription.py
+│           ├── manage_dashboards.py
+│           ├── manage_alerts.py
+│           ├── manage_reports.py
+│           ├── manage_data_masking.py
+│           │
+│           │ # ── Infrastructure (6) ──
+│           ├── manage_retention.py
+│           ├── manage_tenancy.py
+│           ├── manage_iam.py
+│           ├── manage_sso.py
+│           ├── query_tfql.py
+│           │
+│           │ # ── Remediation (3+1) ⚠ requires_approval ──
+│           ├── scale_deployment.py       # ⚠
+│           ├── restart_pod.py            # ⚠
+│           ├── rollback_deploy.py        # ⚠
+│           └── update_alert.py           # ⚠
+│
+├── tests/                               # 458 tests, 97% coverage
+│   ├── conftest.py                      # Shared fixtures
+│   ├── mocks/                           # MockTFOApi, response factories
+│   ├── unit/                            # 34 tool test files
+│   └── integration/                     # Pipeline integration tests
 │
 ├── cron/                                # Scheduled tasks
 │   ├── jobs.json                        # 6 cron jobs
@@ -234,25 +272,32 @@ telemetryflow-hermes/
 │   ├── pre-investigation.sh             # Investigation context logging
 │   └── post-remediation.sh              # Remediation outcome tracking
 │
-└── docs/                                # Documentation wiki
-    ├── README.md                        # This file — wiki index
+├── .github/workflows/                   # GitHub Actions CI/CD
+│   ├── ci.yml                           #   lint → test-unit → test-integration → security → coverage
+│   ├── docker.yml                       #   Multi-platform Docker build (amd64/arm64)
+│   └── release.yml                      #   Tag-triggered release
+├── .gitlab-ci.yml                       # GitLab CI/CD pipeline
+│
+└── docs/                                # Documentation wiki (28+ pages)
+    ├── README.md                        # Wiki index
     ├── getting-started.md
     ├── architecture.md
-    ├── agents/
-    ├── tools/
-    ├── skills/
-    ├── api/
-    ├── deployment/
-    ├── security/
-    ├── configuration/
-    └── operations/
+    ├── tfo-hermes.md                    # Marp presentation
+    ├── agents/                          # Agent docs
+    ├── tools/                           # Tool overview + reference
+    ├── skills/                          # Skill overview + reference
+    ├── api/                             # Auth, LLM module, context types
+    ├── deployment/                      # Standard, Docker, air-gapped
+    ├── security/                        # Security overview + ClickHouse
+    ├── configuration/                   # Environment variables reference
+    └── operations/                      # Cron, hooks, troubleshooting
 ```
 
 ## Key Design Decisions
 
 ### 1. Python stdlib only (no pip dependencies)
 
-All 23 plugin tools use only Python standard library (`urllib`, `json`, `sys`, `os`). No `requests`, `httpx`, or external packages. This maximizes portability and eliminates supply chain risk.
+All 37 plugin tools use only Python standard library (`urllib`, `json`, `sys`, `os`). No `requests`, `httpx`, or external packages. This maximizes portability and eliminates supply chain risk.
 
 ### 2. All queries go through TFO API
 

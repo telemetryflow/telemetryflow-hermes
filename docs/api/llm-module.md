@@ -23,7 +23,7 @@ graph TB
         IC["InsightsController<br/>/api/v2/llm/insights/*"]
         PC["LLMProvidersController<br/>/api/v2/llm/providers/*"]
 
-        CCTX["ContextCollector<br/>4440 lines · 95+ ContextTypes"]
+        CCTX["ContextCollector<br/>4440 lines · 74 ContextTypes"]
         PB["PromptBuilder<br/>865 lines · 65+ System Prompts"]
         IG["InsightGenerator<br/>415 lines · 5 Insight Types"]
         ES["EncryptionService<br/>AES-256-GCM"]

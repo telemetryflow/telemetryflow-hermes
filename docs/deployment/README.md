@@ -1,6 +1,6 @@
 # Deployment Overview
 
-Deploy TelemetryFlow Hermes in standard (cloud-connected) or air-gapped (fully offline) configurations.
+Deploy TelemetryFlow Hermes in standard (cloud-connected), Docker, or air-gapped (fully offline) configurations.
 
 ## Deployment Models
 
@@ -9,15 +9,19 @@ graph TD
     CHOICE{"Deployment Model?"}
 
     STD["Standard Deployment<br/>External LLM providers<br/>Full feature set"]
+    DOCKER["Docker Deployment<br/>Multi-platform containers<br/>docker-compose profiles"]
     AIR["Air-Gapped Deployment<br/>Ollama local models<br/>No external network"]
 
     CHOICE -->|"Internet available"| STD
+    CHOICE -->|"Containerized"| DOCKER
     CHOICE -->|"Zero egress required"| AIR
 
     STD --> STD_STEPS["1. Install Hermes Agent<br/>2. Configure API keys<br/>3. Deploy profiles<br/>4. Start Telegram gateways"]
+    DOCKER --> DOCKER_STEPS["1. Build Docker image<br/>2. Configure .env<br/>3. docker compose up<br/>4. Start Telegram gateways"]
     AIR --> AIR_STEPS["1. Install Hermes Agent<br/>2. Install Ollama + models<br/>3. Deploy profiles (ollama config)<br/>4. Start Telegram gateways"]
 
     style STD fill:#1a3a6b,stroke:#3b82f6,color:#fff
+    style DOCKER fill:#1a4a6b,stroke:#00b4d8,color:#fff
     style AIR fill:#1a6b4a,stroke:#00d4aa,color:#fff
 ```
 
@@ -51,6 +55,8 @@ graph TD
 
 ## Quick Deploy
 
+### Standard
+
 ```bash
 # Clone
 git clone https://github.com/telemetryflow/telemetryflow-hermes.git
@@ -66,6 +72,34 @@ make telegram
 make verify
 make deploy
 ```
+
+### Docker
+
+```bash
+# Clone
+git clone https://github.com/telemetryflow/telemetryflow-hermes.git
+cd telemetryflow-hermes
+
+# Configure
+cp .env.example .env
+# Edit .env with your keys
+
+# Build and start (core stack)
+./run-container.sh -b --up --profile core
+
+# Or full stack
+./run-container.sh -b --up --profile all
+```
+
+## Docker Compose Profiles
+
+| Profile      | Services                                                  |
+| ------------ | --------------------------------------------------------- |
+| _(none)_     | Hermes agent only                                         |
+| `core`       | Backend + Frontend + Postgres + ClickHouse + Redis + NATS |
+| `monitoring` | TFO Collector + TFO Agent + Jaeger                        |
+| `tools`      | Portainer                                                 |
+| `all`        | Everything combined                                       |
 
 ## Next Steps
 

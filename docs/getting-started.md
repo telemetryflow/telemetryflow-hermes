@@ -65,9 +65,9 @@ make setup
 This installs:
 
 - 4 agent profiles (triage, investigator, reviewer, remediator)
-- 11 observability skills
+- 29 skills across 18 categories
 - 6 cron jobs
-- 23 plugin tools
+- 37 plugin tools covering all 20 TFO Platform modules
 - 3 lifecycle hooks
 - ClickHouse read-only security
 
@@ -133,5 +133,5 @@ Expected timeline: **~23 seconds** from alert to proposed remediation.
 
 - [Architecture Overview](./architecture.md) — understand the system design
 - [Agent Configuration](./agents/README.md) — customize each agent's behavior
-- [Tool Reference](./tools/reference.md) — all 23 tools and parameters
+- [Tool Reference](./tools/reference.md) — all 37 tools and parameters
 - [Deployment Guide](./deployment/standard.md) — production deployment

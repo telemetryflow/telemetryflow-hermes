@@ -31,14 +31,14 @@ Self-improving AI agent integration for TelemetryFlow Observability Platform usi
 
 | Document                               | Description                                |
 | -------------------------------------- | ------------------------------------------ |
-| [Tools Overview](./tools/README.md)    | 23 plugin tools and their categories       |
+| [Tools Overview](./tools/README.md)    | 37 plugin tools across 6 categories      |
 | [Tool Reference](./tools/reference.md) | Complete parameter reference for all tools |
 
 ### Skills
 
 | Document                                 | Description                           |
 | ---------------------------------------- | ------------------------------------- |
-| [Skills Overview](./skills/README.md)    | 11 bundled skills and self-evolution  |
+| [Skills Overview](./skills/README.md)    | 29 bundled skills across 18 categories   |
 | [Skill Reference](./skills/reference.md) | All skill descriptions and procedures |
 
 ### API Integration
@@ -48,15 +48,15 @@ Self-improving AI agent integration for TelemetryFlow Observability Platform usi
 | [API Overview](./api/README.md)           | TFO Platform API integration patterns       |
 | [Authentication](./api/authentication.md) | JWT, API Key, and Ingestion auth flows      |
 | [LLM Module](./api/llm-module.md)         | TFO LLM chat, insights, provider management |
-| [Context Types](./api/context-types.md)   | All 95+ ContextType values and usage        |
+| [Context Types](./api/context-types.md)   | All 74 ContextType values and usage        |
 
 ### Deployment
 
 | Document                                            | Description                                 |
 | --------------------------------------------------- | ------------------------------------------- |
-| [Deployment Overview](./deployment/README.md)       | Standard and air-gapped deployment          |
-| [Standard Deployment](./deployment/standard.md)     | Full deployment with external LLM providers |
-| [Air-Gapped Deployment](./deployment/air-gapped.md) | Offline deployment with Ollama              |
+| [Deployment Overview](./deployment/README.md)       | Standard, Docker, and air-gapped deployment   |
+| [Standard Deployment](./deployment/standard.md)     | Full deployment with external LLM providers    |
+| [Air-Gapped Deployment](./deployment/air-gapped.md) | Offline deployment with Ollama                 |
 
 ### Security
 

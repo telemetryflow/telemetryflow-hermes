@@ -59,55 +59,55 @@ The `hermes_readonly` user has SELECT access on exactly 20 tables:
 
 ### Core Telemetry (6 tables)
 
-| Table | Purpose | Materialization |
-|-------|---------|----------------|
-| `metrics_1m` | 1-minute metric rollups | MV from raw metrics |
-| `metrics_5m` | 5-minute metric rollups | MV from metrics_1m |
-| `metrics_1h` | 1-hour metric rollups | MV from metrics_5m |
-| `otel_logs` | Application and system logs | Direct ingestion |
-| `otel_traces` | Distributed trace spans | Direct ingestion |
-| `exemplars` | Metric-to-trace links | Direct ingestion |
+| Table         | Purpose                     | Materialization     |
+| ------------- | --------------------------- | ------------------- |
+| `metrics_1m`  | 1-minute metric rollups     | MV from raw metrics |
+| `metrics_5m`  | 5-minute metric rollups     | MV from metrics_1m  |
+| `metrics_1h`  | 1-hour metric rollups       | MV from metrics_5m  |
+| `otel_logs`   | Application and system logs | Direct ingestion    |
+| `otel_traces` | Distributed trace spans     | Direct ingestion    |
+| `exemplars`   | Metric-to-trace links       | Direct ingestion    |
 
 ### Aggregations (5 tables)
 
-| Table | Purpose |
-|-------|---------|
-| `exemplars_1h` | 1-hour exemplar rollups |
-| `signal_correlations_1h` | Cross-signal correlations |
+| Table                            | Purpose                     |
+| -------------------------------- | --------------------------- |
+| `exemplars_1h`                   | 1-hour exemplar rollups     |
+| `signal_correlations_1h`         | Cross-signal correlations   |
 | `service_latency_percentiles_1h` | Service latency percentiles |
-| `service_error_rates_1h` | Service error rate trends |
-| `logs_1h` | Log aggregation rollups |
+| `service_error_rates_1h`         | Service error rate trends   |
+| `logs_1h`                        | Log aggregation rollups     |
 
 ### Monitoring (5 tables)
 
-| Table | Purpose |
-|-------|---------|
-| `qan_metrics` | Query Analytics for databases |
+| Table                   | Purpose                         |
+| ----------------------- | ------------------------------- |
+| `qan_metrics`           | Query Analytics for databases   |
 | `kubernetes_metrics_1h` | K8s pod/node/deployment metrics |
-| `vm_metrics_1h` | Infrastructure (VM) metrics |
-| `uptime_checks` | Uptime monitoring results |
+| `vm_metrics_1h`         | Infrastructure (VM) metrics     |
+| `uptime_checks`         | Uptime monitoring results       |
 
 ### Platform (2 tables)
 
-| Table | Purpose |
-|-------|---------|
-| `audit_logs` | Platform audit trail |
-| `audit_logs_1h` | Audit log rollups |
+| Table           | Purpose              |
+| --------------- | -------------------- |
+| `audit_logs`    | Platform audit trail |
+| `audit_logs_1h` | Audit log rollups    |
 
 ### Network Maps (2 tables)
 
-| Table | Purpose |
-|-------|---------|
-| `service_map_metrics_1h` | Service dependency map |
-| `network_map_traffic_1h` | Network traffic map |
-| `network_map_connection_metrics_1h` | Connection metrics |
+| Table                               | Purpose                |
+| ----------------------------------- | ---------------------- |
+| `service_map_metrics_1h`            | Service dependency map |
+| `network_map_traffic_1h`            | Network traffic map    |
+| `network_map_connection_metrics_1h` | Connection metrics     |
 
 ## Security Properties
 
 ```mermaid
 graph TD
     USER["hermes_readonly<br/>SETTINGS readonly=1"]
-    
+
     NOSYSTEM["✗ No system tables<br/>(system.*, information_schema)"]
     NOWRITE["✗ No INSERT/UPDATE/DELETE"]
     NODDL["✗ No CREATE/ALTER/DROP"]
@@ -121,13 +121,13 @@ graph TD
     style ONLY20 fill:#1a6b4a,stroke:#00d4aa,color:#fff
 ```
 
-| Property | Enabled By | Prevents |
-|----------|-----------|----------|
-| Read-only mode | `SETTINGS readonly = 1` | All write operations |
-| Table-level grants | `GRANT SELECT ON <table>` | Accessing unauthorized tables |
-| No system access | Grant list excludes `system.*` | Reading server config, other DBs |
-| Workspace scoping | TFO API query guard | Cross-tenant data leakage |
-| Password protected | `IDENTIFIED BY` | Anonymous access |
+| Property           | Enabled By                     | Prevents                         |
+| ------------------ | ------------------------------ | -------------------------------- |
+| Read-only mode     | `SETTINGS readonly = 1`        | All write operations             |
+| Table-level grants | `GRANT SELECT ON <table>`      | Accessing unauthorized tables    |
+| No system access   | Grant list excludes `system.*` | Reading server config, other DBs |
+| Workspace scoping  | TFO API query guard            | Cross-tenant data leakage        |
+| Password protected | `IDENTIFIED BY`                | Anonymous access                 |
 
 ## Verification
 

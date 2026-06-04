@@ -491,7 +491,7 @@ graph TD
 
 ## Skills Hub
 
-Hermes maintains an official Skills Hub with **687 skills across 18 categories**:
+Hermes maintains an official Skills Hub with **687 skills across 18 categories** — plus TelemetryFlow Hermes bundles **29 specialised skills** across **18 categories** covering all 20 TFO Platform modules:
 
 | Source                                                          | Count |
 | --------------------------------------------------------------- | ----- |
@@ -535,15 +535,15 @@ There are two distinct ways to use multiple agents. Both use Hermes profiles. Th
 
 ## Observability Team Architecture
 
-Adapted for TelemetryFlow: four specialised agents forming an autonomous incident response pipeline.
+Adapted for TelemetryFlow: four specialised agents forming an autonomous incident response pipeline, powered by **37 plugin tools** covering all **20 TFO Platform modules**.
 
 ```mermaid
 graph TD
-    ALERT["Alert Fired<br/>(PagerDuty / Prometheus / Slack / K8s Events)"]
-    TRIAGE["<b>Triage Agent</b><br/>Hermes — classifies severity & routes"]
-    INV["<b>Investigator</b><br/>Hermes + ClickHouse tools — query metrics, logs, traces, exemplars"]
-    REV["<b>Reviewer</b><br/>Subagent — separate context, read-only, zero investigation bias"]
-    REM["<b>Remediator</b><br/>Hermes + K8s tools — propose & gate remediation (human approval)"]
+    ALERT["Alert Fired<br/>(TFO Alert Engine / PagerDuty / Slack / K8s Events)"]
+    TRIAGE["<b>Triage Agent</b><br/>glm-5.1 — classifies severity & routes"]
+    INV["<b>Investigator</b><br/>claude-sonnet-4-5 + 37 plugin tools — metrics, logs, traces, exemplars, K8s, DB, LLM"]
+    REV["<b>Reviewer</b><br/>glm-5.1 — separate context, read-only, zero investigation bias"]
+    REM["<b>Remediator</b><br/>glm-5.1 + K8s tools — propose & gate remediation (human approval)"]
     HUMAN["<b>Human</b><br/>Approve / Reject / Manual review"]
     ALERT --> TRIAGE
     TRIAGE -->|"needs investigation?"| INV
@@ -579,9 +579,9 @@ auto-resolved. Only genuine anomalies get escalated.
 
 ---
 
-## Agent 2 — Investigator (Hermes + ClickHouse)
+## Agent 2 — Investigator (Hermes + Plugin Tools)
 
-The workhorse. Gets an alert, queries TelemetryFlow's four signals, correlates evidence, produces root cause hypothesis.
+The workhorse. Gets an alert, queries TelemetryFlow's four signals via dedicated plugin tools, correlates evidence, produces root cause hypothesis.
 
 **Skills auto-created after investigations:**
 
@@ -597,11 +597,12 @@ author: agent
 
 ## Procedure
 
-1. query_metrics('metrics_1m', service='payments-api') → detect memory spike
-2. search_logs('otel_logs', severity='ERROR') → find OOM kill messages
-3. list_traces(duration > 500ms) → identify slow spans
-4. get_exemplars(metric='memory_usage') → link to specific traces
-5. Cross-reference with MEMORY.md: previous OOM incidents
+1. query_metrics --signal metrics --service payments-api → detect memory spike
+2. search_logs --severity ERROR → find OOM kill messages
+3. list_traces --min-duration 500 → identify slow spans
+4. get_exemplars --metric memory_usage → link to specific traces
+5. query_correlations → cross-signal evidence
+6. Cross-reference with MEMORY.md: previous OOM incidents
 
 ## Root Cause Pattern
 
@@ -693,11 +694,11 @@ Severity: HIGH — genuine anomaly (different from past patterns: latency, not O
 
 ```
 Loads skill: payments-api-oom-rca (auto-created from past investigations)
-Queries TelemetryFlow ClickHouse:
-  query_metrics('metrics_1m') → memory spike from 512MiB to 890MiB
-  search_logs('otel_logs', severity='ERROR') → 512 OOM kill messages
-  list_traces(duration > 500ms) → 89 slow spans on pod payments-api-7b8cf
-  get_exemplars(metric='memory_usage') → linked traces show allocation burst
+Queries TelemetryFlow via plugin tools:
+  query_metrics --signal metrics → memory spike from 512MiB to 890MiB
+  search_logs --severity ERROR → 512 OOM kill messages
+  list_traces --min-duration 500 → 89 slow spans on pod payments-api-7b8cf
+  get_exemplars --metric memory_usage → linked traces show allocation burst
 → Root cause hypothesis: OOM after v2.4.1 deploy, memory request insufficient
 ```
 
@@ -865,6 +866,23 @@ delegation:
 
 ---
 
+## TelemetryFlow Plugin Tools — 37 Tools, 20 Modules
+
+All tools are Python stdlib only (zero dependencies). Each tool communicates with TFO Platform via REST API — no direct ClickHouse connections.
+
+| Category               | Tools                                                                                                                                                 |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Core Telemetry (5)** | `query_metrics`, `search_logs`, `list_traces`, `get_exemplars`, `query_correlations`                                                                  |
+| **Monitoring (8)**     | `check_k8s`, `check_infra`, `check_uptime`, `check_vm`, `check_agent`, `check_service_map`, `check_network_map`, `check_db_monitoring`                |
+| **AI & LLM (7)**       | `chat_with_context`, `stream_chat`, `manage_conversation`, `generate_insight`, `query_llm_usage`, `manage_provider`, `query_ai_intelligence`          |
+| **Platform (8)**       | `query_platform`, `query_account`, `query_audit`, `query_subscription`, `manage_dashboards`, `manage_alerts`, `manage_reports`, `manage_data_masking` |
+| **Infrastructure (6)** | `manage_retention`, `manage_tenancy`, `manage_iam`, `manage_sso`, `query_tfql`, `check_uptime` (expanded)                                             |
+| **Remediation (4) ⚠**  | `scale_deployment`, `restart_pod`, `rollback_deploy`, `update_alert` — all require human approval                                                     |
+
+> **74 ContextType values** from TFO's ContextCollector, **15 LLM provider types**, **5 insight types** — full coverage of the TFO LLM module.
+
+---
+
 ## Connect Telegram Gateway
 
 **Prerequisites:**
@@ -1009,7 +1027,7 @@ Chain jobs: one cron's output becomes the next's input via a `context_from` flag
 | -------------------- | --------------------------------------- | ------------------------------- |
 | **Credentials**      | `~/.hermes/.env` — secrets only         | Passwords in code / config.yaml |
 | **DB Roles**         | Read-only ClickHouse user for Hermes    | Unbounded data mutation         |
-| **Tool Permissions** | `hermes tools enable/disable`           | Unauthorized tool access        |
+| **Tool Permissions** | 37 plugin tools, 4 gated ⚠              | Unauthorized write access       |
 | **Action Gates**     | Human-in-the-loop for write operations  | Autonomous mutation             |
 | **Tenant Isolation** | Mandatory workspace_id on all queries   | Cross-tenant data leakage       |
 | **Reviewer Bias**    | Separate context, read-only tools       | Investigation bias defense      |
@@ -1020,6 +1038,43 @@ Chain jobs: one cron's output becomes the next's input via a `context_from` flag
 ---
 
 ## Air-Gapped Deployment
+
+For environments requiring zero external egress, use **Ollama** as the LLM provider. Or deploy with **Docker** using the provided Dockerfile and docker-compose.yaml.
+
+### Docker Deployment
+
+```bash
+# Build and start with TFO Platform stack
+./run-container.sh -b --up --profile core
+
+# Or full stack (backend + frontend + collector + agent)
+./run-container.sh -b --up --profile all
+```
+
+```mermaid
+graph LR
+    HERMES["tfo-hermes<br/>37 Plugin Tools"] --> API["TFO Backend<br/>:3000"]
+    API --> PG["PostgreSQL"]
+    API --> CH["ClickHouse"]
+    API --> RD["Redis"]
+    API --> NATS["NATS"]
+
+    COLLECTOR["tfo-collector<br/>:4317/:4318"] --> API
+    AGENT["tfo-agent<br/>Host Metrics"] --> COLLECTOR
+    VIZ["tfo-viz<br/>:8080"] --> API
+```
+
+**Docker Compose Profiles:**
+
+| Profile      | Services                                                  |
+| ------------ | --------------------------------------------------------- |
+| _(none)_     | Hermes agent only                                         |
+| `core`       | Backend + Frontend + Postgres + ClickHouse + Redis + NATS |
+| `monitoring` | TFO Collector + TFO Agent + Jaeger                        |
+| `tools`      | Portainer                                                 |
+| `all`        | Everything combined                                       |
+
+### Air-Gapped (Ollama)
 
 For environments requiring zero external egress, use **Ollama** as the LLM provider.
 
@@ -1053,21 +1108,35 @@ Prompt, context, and response **never leave the cluster**. No API keys needed. N
 
 ## TelemetryFlow Feature Coverage
 
-How Hermes agent capabilities map to TelemetryFlow's complete feature set.
+How Hermes plugin tools map to TelemetryFlow's complete feature set — all 20 TFO Platform modules covered.
 
-| TelemetryFlow Feature | Hermes Capability              | How It Works                                     |
-| --------------------- | ------------------------------ | ------------------------------------------------ |
-| Metrics Explorer      | Terminal tool + ClickHouse CLI | Query metrics_1m/5m/1h tables directly           |
-| Log Viewer            | Terminal tool + ClickHouse CLI | FTS search on otel_logs with severity filters    |
-| Distributed Tracing   | Terminal tool + ClickHouse CLI | Query otel_traces for span waterfall analysis    |
-| Exemplars             | Terminal tool + ClickHouse CLI | Join metrics and traces via exemplar links       |
-| Alert Management      | Web tool + TelemetryFlow API   | Read alert rules, verify thresholds              |
-| Dashboard Builder     | Web tool + TelemetryFlow API   | Understand current monitoring setup              |
-| K8s Monitoring        | Terminal tool + kubectl        | Direct pod/deployment inspection and remediation |
-| Correlation Engine    | Multi-agent + Memory           | Cross-signal correlation via specialised agents  |
-| Database Monitoring   | Terminal tool + ClickHouse CLI | Query QAN data for slow query detection          |
-| AI Intelligence (MCP) | Web tool + MCP server          | Leverage existing Go/Python MCP servers          |
-| TFQL Query Engine     | Terminal tool + API            | Natural language to ClickHouse SQL via TFQL      |
+| TelemetryFlow Feature | Plugin Tool                     | How It Works                                   |
+| --------------------- | ------------------------------- | ---------------------------------------------- |
+| Metrics Explorer      | `query_metrics`                 | Query metrics_1m/5m/1h via TFO API             |
+| Log Viewer            | `search_logs`                   | FTS search on otel_logs with severity filters  |
+| Distributed Tracing   | `list_traces`                   | Query otel_traces for span waterfall analysis  |
+| Exemplars             | `get_exemplars`                 | Join metrics and traces via exemplar links     |
+| Alert Management      | `manage_alerts`                 | CRUD alert rules, verify thresholds            |
+| Dashboard Builder     | `manage_dashboards`             | Create/read/update dashboards and widgets      |
+| Uptime Monitoring     | `check_uptime`                  | Monitors, status pages, SSL, incidents         |
+| VM Monitoring         | `check_vm`                      | Virtual machine inventory and metrics          |
+| Agent Monitoring      | `check_agent`                   | TFO Agent health, heartbeat, metrics           |
+| Kubernetes            | `check_k8s`                     | Clusters, nodes, pods, deployments             |
+| Service Map           | `check_service_map`             | Service topology, dependencies, health         |
+| Network Map           | `check_network_map`             | Network topology, connections, flow            |
+| Database Monitoring   | `check_db_monitoring`           | 16 database types + QAN                        |
+| K8s Remediation       | `scale/restart/rollback`        | Gated K8s actions with human approval ⚠        |
+| Correlation Engine    | `query_correlations`            | Cross-signal correlation from ClickHouse       |
+| AI Intelligence       | `query_ai_intelligence`         | Anomaly, predictive, cost, corrective insights |
+| LLM Module            | `chat/context/insight/provider` | Full LLM chat, streaming, insights, providers  |
+| TFQL Query Engine     | `query_tfql`                    | Natural language to ClickHouse SQL via TFQL    |
+| IAM & SSO             | `manage_iam` / `manage_sso`     | Users, roles, SSO provider management          |
+| Audit & Compliance    | `query_audit`                   | Audit log queries, compliance reporting        |
+| Reporting             | `manage_reports`                | Report definitions and generation              |
+| Retention             | `manage_retention`              | Data retention policies                        |
+| Tenancy               | `manage_tenancy`                | Regions, organizations, workspaces, tenants    |
+| Subscription          | `query_subscription`            | Plan, billing, usage, limits                   |
+| Data Masking          | `manage_data_masking`           | PII masking policies                           |
 
 ---
 
@@ -1085,13 +1154,18 @@ How Hermes agent capabilities map to TelemetryFlow's complete feature set.
 │   └── USER.md           # User profile (1,375 char max)
 │
 ├── skills/               # All skills (bundled, hub, agent-created)
-│   ├── observability/
+│   ├── monitoring/       #   8 monitoring skills (uptime, vm, agent, k8s, service-map, network-map, ...)
+│   ├── observability/    #   9 observability skills
 │   │   ├── k8s-pod-debug/
 │   │   │   └── SKILL.md  # Auto-created investigation procedure
 │   │   ├── payments-api-oom-rca/
 │   │   │   └── SKILL.md
 │   │   └── clickhouse-query-patterns/
 │   │       └── SKILL.md
+│   ├── alerting/         #   alert-management
+│   ├── dashboard/        #   dashboard-management
+│   ├── reporting/        #   report-automation
+│   ├── database-monitoring/ # slow-query-detection, qan-analysis
 │   └── .hub/             # Skills Hub state (687 skills, 18 categories)
 │
 ├── profiles/             # Multi-agent team profiles
@@ -1105,7 +1179,18 @@ How Hermes agent capabilities map to TelemetryFlow's complete feature set.
 ├── cron/
 │   ├── jobs.json         # Scheduled investigation jobs
 │   └── output/           # Cron run outputs
-├── plugins/              # Custom plugins
+├── plugins/              # TelemetryFlow plugin (37 tools)
+│   └── telemetryflow/
+│       ├── plugin.yaml   # v3.0.0 — 37 tools, 3 env vars
+│       └── tools/        # Python stdlib only (zero deps)
+│           ├── _shared.py  # API helpers, 74 ContextTypes, 15 ProviderTypes
+│           ├── query_metrics.py
+│           ├── search_logs.py
+│           ├── ...       # 37 tools total covering all 20 TFO modules
+│           ├── scale_deployment.py   # ⚠ requires_approval
+│           ├── restart_pod.py        # ⚠ requires_approval
+│           ├── rollback_deploy.py    # ⚠ requires_approval
+│           └── update_alert.py       # ⚠ requires_approval
 ├── hooks/                # Lifecycle hooks
 ├── skins/                # CLI themes
 └── logs/                 # agent.log, gateway.log, errors.log
@@ -1133,7 +1218,7 @@ How Hermes agent capabilities map to TelemetryFlow's complete feature set.
 
 2. **Hermes is a self-improving agent** — It accumulates memory across sessions, writes and prunes its own reusable skills, and can be optimized offline via GEPA. No other open-source agent ships all three.
 
-3. **The integration is terminal + API** — Hermes queries ClickHouse directly via terminal tool and TelemetryFlow's REST API via web tool. Existing MCP servers and TFQL can also be leveraged.
+3. **The integration is plugin tools + API** — Hermes queries TelemetryFlow through 37 dedicated plugin tools covering all 20 TFO Platform modules. No direct ClickHouse connections — everything goes through the authenticated REST API.
 
 4. **Multi-agent teams separate concerns** — Triage, Investigation, Review, and Remediation each get their own profile, context, and model. No context window pollution.
 
@@ -1155,7 +1240,7 @@ How Hermes agent capabilities map to TelemetryFlow's complete feature set.
 
 > The observability data is already there.
 > The self-improving agent is already there.
-> The integration is terminal + API.
+> The integration is 37 plugin tools + TFO REST API.
 > The evolution is one webhook switch away.
 
 **Dwi Fahni Denni** · TelemetryFlow · 2026

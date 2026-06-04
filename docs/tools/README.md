@@ -1,6 +1,6 @@
 # Tools Overview
 
-23 Python plugin tools organized into 8 categories. All tools use Python stdlib only (no external dependencies) and communicate with TFO Platform via the REST API.
+37 Python plugin tools organized into 6 categories covering all 20 TFO Platform modules. All tools use Python stdlib only (no external dependencies) and communicate with TFO Platform via the REST API.
 
 ## Architecture
 
@@ -136,7 +136,7 @@ All tools import from `_shared.py`:
 ### Type Constants
 
 ```python
-CONTEXT_TYPES = [...]  # 95+ context type strings
+    CONTEXT_TYPES = [...]  # 74 context type strings
 INSIGHT_TYPES = ["chronology", "prediction", "recommendation", "root-cause", "pattern"]
 PROVIDER_TYPES = ["anthropic", "claude", "openai", "google", "gemini", "deepseek",
                   "qwen", "ollama", "mistral", "grok", "kimi", "zhipu", "mimo",

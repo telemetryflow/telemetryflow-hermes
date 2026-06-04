@@ -29,3 +29,5 @@ bandit-results.sarif
 .vscode/
 *.swp
 *.swo
+
+dist/**

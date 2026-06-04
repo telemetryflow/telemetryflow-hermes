@@ -266,7 +266,7 @@ python3 chat_with_context.py \
 | Parameter           | Required | Description                                     |
 | ------------------- | -------- | ----------------------------------------------- |
 | `--message`         | Yes      | Chat message (max 32,000 chars)                 |
-| `--context_type`    | Yes      | One of 95+ ContextType values                   |
+| `--context_type`    | Yes      | One of 74 ContextType values                    |
 | `--context_id`      | No       | Specific context (e.g., service name, alert ID) |
 | `--conversation_id` | No       | Continue existing conversation                  |
 | `--provider_id`     | No       | LLM provider ID (defaults to org default)       |
@@ -315,7 +315,7 @@ python3 generate_insight.py \
 | Parameter        | Required | Description                                                           |
 | ---------------- | -------- | --------------------------------------------------------------------- |
 | `--insight_type` | Yes      | `chronology`, `prediction`, `recommendation`, `root-cause`, `pattern` |
-| `--context_type` | Yes      | One of 95+ ContextType values                                         |
+| `--context_type` | Yes      | One of 74 ContextType values                                          |
 | `--context_id`   | No       | Specific context ID                                                   |
 | `--provider_id`  | No       | LLM provider to use                                                   |
 | `--time_from`    | No       | Start time (default: 24 hours ago)                                    |

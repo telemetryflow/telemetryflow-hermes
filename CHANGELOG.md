@@ -11,10 +11,10 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python)](https://www.python.org/)
 [![Hermes](https://img.shields.io/badge/Hermes-Agent-00d4aa)](https://github.com/NousResearch/hermes-agent)
-[![Tests](https://img.shields.io/badge/Tests-105%20passing-brightgreen.svg)](tests/)
-[![Coverage](https://img.shields.io/badge/Coverage-95%25+-brightgreen.svg)](tests/)
-[![Tools](https://img.shields.io/badge/Tools-23%20Plugin-blueviolet)](plugins/telemetryflow/plugin.yaml)
-[![ContextTypes](https://img.shields.io/badge/ContextTypes-95+-9cf)](docs/api/context-types.md)
+[![Tests](https://img.shields.io/badge/Tests-458%20passing-brightgreen.svg)](tests/)
+[![Coverage](https://img.shields.io/badge/Coverage-97%25-brightgreen.svg)](tests/)
+[![Tools](https://img.shields.io/badge/Tools-37%20Plugin-blueviolet)](plugins/telemetryflow/plugin.yaml)
+[![ContextTypes](https://img.shields.io/badge/ContextTypes-74-9cf)](docs/api/context-types.md)
 [![ClickHouse](https://img.shields.io/badge/ClickHouse-Readonly-FFCC00?logo=clickhouse)](security/clickhouse-readonly.sql)
 [![Docs](https://img.shields.io/badge/Docs-28%20Pages-informational)](docs/)
 
@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Summary
 
-**Initial public release** — Complete multi-agent AI incident response integration for TelemetryFlow Observability (TFO) Platform. Four specialised agents (Triage, Investigator, Reviewer, Remediator) form an autonomous pipeline with 23 plugin tools, 11 bundled skills, comprehensive documentation, and full CI/CD.
+**Initial public release** — Complete multi-agent AI incident response integration for TelemetryFlow Observability (TFO) Platform. Four specialised agents (Triage, Investigator, Reviewer, Remediator) form an autonomous pipeline with 37 plugin tools covering all 20 TFO Platform modules, 29 skills across 18 categories, comprehensive documentation, and full CI/CD.
 
 ```mermaid
 flowchart LR
@@ -54,22 +54,25 @@ flowchart LR
 - **Reviewer Agent** — Independent verification in separate context, zero investigation bias, read-only tools only
 - **Remediator Agent** — Gated remediation proposals (scale, restart, rollback, update_alert), 600s approval timeout with auto-escalation
 
-#### Plugin Tools — 23 Tools (Python stdlib only)
+#### Plugin Tools — 37 Tools (Python stdlib only)
 
 - **Core Telemetry (5)**: `query_metrics`, `search_logs`, `list_traces`, `get_exemplars`, `query_correlations`
-- **Infrastructure (3)**: `check_k8s`, `check_infra`, `check_db_monitoring` (16 database types)
-- **Platform (5)**: `check_uptime`, `query_ai_intelligence`, `query_platform`, `query_account`, `manage_data_masking`
-- **LLM Module (6)**: `chat_with_context`, `stream_chat`, `manage_conversation`, `generate_insight`, `query_llm_usage`, `manage_provider`
-- **Remediation (4)**: `scale_deployment`, `restart_pod`, `rollback_deploy`, `update_alert` — all marked `requires_approval: true`
+- **Monitoring (8)**: `check_k8s`, `check_infra`, `check_uptime`, `check_vm`, `check_agent`, `check_service_map`, `check_network_map`, `check_db_monitoring` (16 database types)
+- **AI & LLM (7)**: `chat_with_context`, `stream_chat`, `manage_conversation`, `generate_insight`, `query_llm_usage`, `manage_provider`, `query_ai_intelligence`
+- **Platform (8)**: `query_platform`, `query_account`, `query_audit`, `query_subscription`, `manage_dashboards`, `manage_alerts`, `manage_reports`, `manage_data_masking`
+- **Infrastructure (6)**: `manage_retention`, `manage_tenancy`, `manage_iam`, `manage_sso`, `query_tfql`, `check_uptime` (expanded)
+- **Remediation (3+1)**: `scale_deployment`, `restart_pod`, `rollback_deploy` (all gated) + `update_alert`
 
-#### Skills — 11 Bundled
+#### Skills — 29 Bundled
 
-- **Observability (9)**: `k8s-pod-debug`, `payments-api-oom-rca`, `clickhouse-query-patterns`, `tfql-natural-language`, `alert-triage`, `remediation-gate`, `cross-signal-correlation`, `memory-pressure-investigation`, `tfo-llm-api`
+- **Monitoring (8)**: `k8s-pod-debug`, `uptime-monitoring`, `vm-monitoring`, `agent-monitoring`, `kubernetes-monitoring`, `service-map-analysis`, `network-map-analysis`, `check_uptime` (expanded)
 - **Database Monitoring (2)**: `slow-query-detection`, `qan-analysis`
+- **Observability (9)**: `payments-api-oom-rca`, `clickhouse-query-patterns`, `tfql-natural-language`, `alert-triage`, `remediation-gate`, `cross-signal-correlation`, `memory-pressure-investigation`, `tfo-llm-api`, `db-monitoring-analysis`
+- **Platform (10)**: `alert-management`, `dashboard-management`, `report-automation`, `retention-management`, `audit-compliance`, `subscription-management`, `tenancy-administration`, `iam-administration`, `sso-configuration`, `tfql-query`
 
 #### TFO LLM Module Integration
 
-- Full ContextCollector support with 95+ ContextType values
+- Full ContextCollector support with 74 ContextType values
 - Chat endpoint (`/api/v2/llm/chat/message`) with automatic telemetry context injection
 - Streaming chat (`/api/v2/llm/chat/stream`) via SSE
 - Insight generation (`/api/v2/llm/insights/generate`) — 5 types: chronology, prediction, recommendation, root-cause, pattern
@@ -113,7 +116,9 @@ flowchart LR
 
 - **Standard deployment** — External LLM providers (Anthropic, Zhipu/OpenCode Go)
 - **Air-gapped deployment** — Ollama local models, zero external network
+- **Docker deployment** — Multi-platform Docker image (amd64/arm64) with docker-compose profiles (core, monitoring, tools, all)
 - 5 deployment scripts (`install.sh`, `setup-profiles.sh`, `setup-telegram.sh`, `verify-pipeline.sh`, `deploy-air-gapped.sh`)
+- `run-container.sh` for building, tagging, pushing, and orchestrating Docker containers
 
 #### Documentation — 28 Pages
 
@@ -128,18 +133,19 @@ flowchart LR
 - Operations guide (cron, hooks, troubleshooting)
 - Marp presentation (1,154 lines)
 
-#### Testing — 105 Tests, 95%+ Coverage
+#### Testing — 458 Tests, 97% Coverage
 
 - `tests/conftest.py` — Shared fixtures (mock_env, mock_urlopen, capture_stdout, mock_exit)
 - `tests/mocks/tfo_api.py` — MockTFOApi, mock response factories
 - `tests/unit/test_shared.py` — \_shared.py utilities (API helpers, parse_args, constants)
-- `tests/unit/test_*.py` — 21 tool test files
+- `tests/unit/test_*.py` — 34 tool test files
 - `tests/integration/test_pipeline.py` — End-to-end pipeline tests
 
 #### CI/CD
 
-- **GitHub Actions** — 5-job CI (lint, test, security, coverage, summary) + release workflow
+- **GitHub Actions** — 7-job CI (lint, test-unit, test-integration, security, coverage, build, summary) + Docker build + release workflow
 - **GitLab CI/CD** — 5-stage pipeline matching GitHub Actions
+- **Docker** — Multi-platform Dockerfile (python:3.13-slim-trixie) + docker-compose.yaml (4 profiles)
 - **Makefile** — 10 CI targets (ci-deps, ci-lint, ci-test-unit, ci-test-integration, ci-test, ci-security, ci-coverage, ci-validate, ci-pipeline, ci)
 
 ### Technical Details

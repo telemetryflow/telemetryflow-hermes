@@ -1,6 +1,6 @@
 # Context Types
 
-Complete reference for all 95+ ContextType values used by the TelemetryFlow LLM module's `ContextCollector`. Context types determine what telemetry data is automatically gathered when sending a chat message or generating an insight.
+Complete reference for all 74 ContextType values used by the TelemetryFlow LLM module's `ContextCollector`. Context types determine what telemetry data is automatically gathered when sending a chat message or generating an insight.
 
 ## How Context Types Work
 
@@ -24,7 +24,7 @@ sequenceDiagram
 
 ```mermaid
 graph TD
-    CTX["ContextType<br/>95+ Values"]
+    CTX["ContextType<br/>74 Values"]
 
     CORE["Core Telemetry<br/>5 types"]
     K8S["Kubernetes<br/>8 types"]

@@ -1,6 +1,6 @@
 # Skills Overview
 
-11 bundled skills covering observability investigation procedures and database monitoring. Skills are Hermes Agent's procedural memory — they define **how** the agent does things.
+29 bundled skills across 18 categories covering all 20 TFO Platform modules. Skills are Hermes Agent's procedural memory — they define **how** the agent does things.
 
 ## Self-Evolving Skills
 
@@ -26,17 +26,17 @@ Skills are automatically created when the Investigator:
 
 ### Observability (9 skills)
 
-| Skill                           | Category      | Trigger                                       |
-| ------------------------------- | ------------- | --------------------------------------------- |
-| `k8s-pod-debug`                 | Kubernetes    | CrashLoopBackOff, OOMKilled, pod failures     |
-| `payments-api-oom-rca`          | RCA           | payments-api memory spike, OOM pattern        |
-| `clickhouse-query-patterns`     | Query         | Common ClickHouse query templates for TFO     |
-| `tfql-natural-language`         | Query         | Natural language to TFQL conversion           |
-| `alert-triage`                  | Triage        | Alert classification and severity assessment  |
-| `remediation-gate`              | Remediation   | Approval gate workflow for write actions      |
-| `cross-signal-correlation`      | Investigation | Correlating metrics ↔ logs ↔ traces           |
-| `memory-pressure-investigation` | Investigation | Node/pod memory pressure debugging            |
-| `tfo-llm-api`                   | API           | TFO LLM API v2.0 reference (95+ ContextTypes) |
+| Skill                           | Category      | Trigger                                      |
+| ------------------------------- | ------------- | -------------------------------------------- |
+| `k8s-pod-debug`                 | Kubernetes    | CrashLoopBackOff, OOMKilled, pod failures    |
+| `payments-api-oom-rca`          | RCA           | payments-api memory spike, OOM pattern       |
+| `clickhouse-query-patterns`     | Query         | Common ClickHouse query templates for TFO    |
+| `tfql-natural-language`         | Query         | Natural language to TFQL conversion          |
+| `alert-triage`                  | Triage        | Alert classification and severity assessment |
+| `remediation-gate`              | Remediation   | Approval gate workflow for write actions     |
+| `cross-signal-correlation`      | Investigation | Correlating metrics ↔ logs ↔ traces          |
+| `memory-pressure-investigation` | Investigation | Node/pod memory pressure debugging           |
+| `tfo-llm-api`                   | API           | TFO LLM API v2.0 reference (74 ContextTypes) |
 
 ### Database Monitoring (2 skills)
 

@@ -7,7 +7,7 @@ TelemetryFlow Hermes integrates with the TFO Platform through its REST API and C
 ```mermaid
 graph TB
     subgraph "Hermes Plugin Tools"
-        TOOLS["23 Python Tools"]
+        TOOLS["37 Python Tools"]
         SHARED["_shared.py<br/>tfo_request() · clickhouse_query()"]
     end
 
@@ -73,7 +73,7 @@ All telemetry queries go through `POST /api/v2/telemetry/query`:
 
 ### Context Types
 
-See [Context Types](./context-types.md) for the complete list of 95+ ContextType values used by the LLM module.
+See [Context Types](./context-types.md) for the complete list of 74 ContextType values used by the LLM module.
 
 ## Authentication Flow
 

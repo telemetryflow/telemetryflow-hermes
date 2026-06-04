@@ -122,11 +122,11 @@ make setup
 This runs:
 
 1. `scripts/setup-profiles.sh` — Creates 4 agent profiles
-2. Skills installation — Copies 11 skills to `~/.hermes/skills/`
+2. Skills installation — Copies 29 skills to `~/.hermes/skills/`
 3. Cron installation — Copies `jobs.json` to `~/.hermes/cron/`
 4. Security setup — Runs ClickHouse readonly user setup
 5. Hooks installation — Copies 3 lifecycle hooks
-6. Plugin installation — Copies 23 tools to `~/.hermes/plugins/`
+6. Plugin installation — Copies 37 tools to `~/.hermes/plugins/`
 
 ### Step 7 — Configure Telegram Gateways
 
@@ -203,11 +203,11 @@ Expected flow: Triage → Investigator → Reviewer → Remediator → Human app
 | `make install`    | Install Hermes Agent only                               |
 | `make setup`      | Deploy profiles, skills, cron, security, hooks, plugins |
 | `make profiles`   | Create 4 agent profiles                                 |
-| `make skills`     | Install 11 observability skills                         |
+| `make skills`     | Install 29 observability skills                         |
 | `make cron`       | Install 6 cron jobs                                     |
 | `make security`   | Setup ClickHouse read-only user                         |
 | `make hooks`      | Install 3 lifecycle hooks                               |
-| `make plugins`    | Install TelemetryFlow plugin (23 tools)                 |
+| `make plugins`    | Install TelemetryFlow plugin (37 tools)                 |
 | `make telegram`   | Configure 4 Telegram gateways                           |
 | `make verify`     | Run pipeline verification                               |
 | `make deploy`     | Setup + start all gateways                              |
