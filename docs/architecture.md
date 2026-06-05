@@ -20,14 +20,14 @@ graph TB
         H_SOUL["SOUL.md<br/>Identity"]
         H_MEM["Memory<br/>Tier 1 · Tier 2 · Tier 3"]
         H_SKILLS["Skills<br/>29 Bundled · 18 Categories"]
-        H_PLUGIN["TelemetryFlow Plugin<br/>37 Tools"]
+        H_PLUGIN["TelemetryFlow Plugin<br/>40 Tools"]
     end
 
-    subgraph "Agent Team"
-        TRIAGE["Triage<br/>glm-5.1"]
-        INV["Investigator<br/>claude-sonnet-4-5"]
-        REV["Reviewer<br/>glm-5.1"]
-        REM["Remediator<br/>glm-5.1"]
+    subgraph "Agent Team (Adversarial Scientists)"
+        TRIAGE["Triage<br/>Paranoid Gatekeeper<br/>glm-5.1"]
+        INV["Investigator<br/>Hostile Scientist<br/>claude-sonnet-4-5"]
+        REV["Reviewer<br/>Professional Skeptic<br/>glm-5.1"]
+        REM["Remediator<br/>Cautious Pragmatist<br/>glm-5.1"]
     end
 
     subgraph "Human Interface"
@@ -69,9 +69,10 @@ sequenceDiagram
 
     TF->>TR: Alert webhook fires
     activate TR
-    TR->>TR: Classify severity
+    TR->>TR: Assume alert is lying
+    TR->>TR: Classify severity (zero hallucination)
     TR->>TR: Check MEMORY.md for known patterns
-    TR->>INV: Delegate investigation
+    TR->>INV: Delegate investigation (with challenge if INCOMPLETE)
     deactivate TR
 
     activate INV
@@ -79,20 +80,26 @@ sequenceDiagram
     INV->>TF: search_logs (otel_logs)
     INV->>TF: list_traces (otel_traces)
     INV->>TF: get_exemplars (memory_usage)
-    INV->>INV: Form root cause hypothesis
-    INV->>REV: Delegate review
+    INV->>INV: Form hypotheses + falsify each (guilty until proven innocent)
+    INV->>INV: Document dead hypotheses
+    INV->>REV: Delegate review (surviving hypothesis + evidence)
     deactivate INV
 
     activate REV
     REV->>TF: Verify evidence (read-only)
-    REV->>REV: Check for bias / alternatives
-    REV->>REM: Approved hypothesis
+    REV->>REV: Hunt for disconfirming evidence
+    REV->>REV: Verdict: CONFIRMED / NEEDS_MORE_EVIDENCE / REJECTED
+    REV->>REM: CONFIRMED hypothesis
     deactivate REV
 
     activate REM
+    REM->>REM: Gate 1: Root cause confirmed?
+    REM->>REM: Gate 2: Proportional response?
+    REM->>REM: Blast radius analysis
     REM->>H: Telegram: Alert + Evidence + Proposed Action
     H->>REM: Approve / Reject
     REM->>TF: Execute remediation
+    REM->>REM: Post-action verification (mandatory)
     deactivate REM
 ```
 
@@ -108,7 +115,7 @@ graph LR
         MEM["memories/<br/>MEMORY.md · USER.md"]
         PROFILES["profiles/<br/>triage · investigator · reviewer · remediator"]
         SKILLS["skills/<br/>observability/ · database-monitoring/"]
-        PLUGIN["plugins/telemetryflow/<br/>plugin.yaml + 37 tools"]
+        PLUGIN["plugins/telemetryflow/<br/>plugin.yaml + 40 tools"]
         CRON["cron/<br/>jobs.json (6 scheduled tasks)"]
         HOOKS["hooks/<br/>pre-investigation · post-remediation · on-alert-fired"]
         SEC["security/<br/>clickhouse-readonly.sql"]
@@ -138,7 +145,7 @@ graph LR
 | **LLM Providers**           | Anthropic, Zhipu (OpenCode Go), OpenRouter, Ollama | Model inference for different agent roles                |
 | **Observability**           | TelemetryFlow Platform                             | Metrics, Logs, Traces, Exemplars in ClickHouse           |
 | **Database**                | ClickHouse                                         | Columnar storage for all telemetry signals               |
-| **Plugin Runtime**          | Python 3 (stdlib only)                             | 37 tools using `urllib`, `json`, `sys`                   |
+| **Plugin Runtime**          | Python 3 (stdlib only)                               | 40 tools using `urllib`, `json`, `sys`                   |
 | **Communication**           | Telegram Bot API                                   | Human-in-the-loop notifications                          |
 | **Container Orchestration** | Kubernetes                                         | Pod/deployment management for remediation                |
 | **Security**                | JWT, API Keys (tfk*/tfs*), AES-256-GCM             | Authentication and encryption                            |
@@ -150,28 +157,28 @@ telemetryflow-hermes/
 ├── config.yaml                          # Default Hermes agent configuration
 ├── SOUL.md                              # Default agent identity
 ├── .env.example                         # API key template (3 auth methods)
-├── Makefile                             # Setup, deploy, verify, CI targets
+├── Makefile                             # init, configure, deploy, verify, docker, clean targets
 ├── pyproject.toml                       # Python project config (pytest, ruff, coverage)
 ├── Dockerfile                           # Multi-stage Docker (python:3.13-slim-trixie)
 ├── docker-compose.yaml                  # 4 profiles: core, monitoring, tools, all
 ├── run-container.sh                     # Build, tag, push, compose orchestration
 │
 ├── profiles/                            # Multi-agent team (4 profiles)
-│   ├── triage/                          # Alert classifier
+│   ├── triage/                          # Paranoid gatekeeper
 │   │   ├── config.yaml                  #   glm-5.1, max_turns=30, readonly
-│   │   ├── SOUL.md                      #   Triage specialist identity
+│   │   ├── SOUL.md                      #   Paranoid gatekeeper identity
 │   │   └── memories/                    #   MEMORY.md + USER.md
-│   ├── investigator/                    # Evidence gatherer
+│   ├── investigator/                    # Hostile scientist
 │   │   ├── config.yaml                  #   claude-sonnet-4-5, max_turns=45
-│   │   ├── SOUL.md                      #   Senior SRE identity
+│   │   ├── SOUL.md                      #   Hostile scientist identity
 │   │   └── memories/
-│   ├── reviewer/                        # Independent verifier
+│   ├── reviewer/                        # Professional skeptic
 │   │   ├── config.yaml                  #   glm-5.1, max_turns=20, readonly
-│   │   ├── SOUL.md                      #   Independent reviewer identity
+│   │   ├── SOUL.md                      #   Professional skeptic identity
 │   │   └── memories/
-│   └── remediator/                      # Gated actor
+│   └── remediator/                      # Cautious pragmatist
 │       ├── config.yaml                  #   glm-5.1, max_turns=15, require_approval
-│       ├── SOUL.md                      #   Remediation specialist identity
+│       ├── SOUL.md                      #   Cautious pragmatist identity
 │       └── memories/
 │
 ├── skills/                              # 29 bundled skills (18 categories)
@@ -193,8 +200,8 @@ telemetryflow-hermes/
 │
 ├── plugins/                             # TelemetryFlow plugin
 │   └── telemetryflow/
-│       ├── plugin.yaml                  # v3.0.0 — 37 tools
-│       └── tools/                       # 37 Python tools (stdlib only)
+│       ├── plugin.yaml                  # v1.2.0 — 40 tools
+│       └── tools/                       # 40 Python tools (stdlib only)
 │           ├── _shared.py               # TFO API helpers, 74 ContextTypes, 15 ProviderTypes
 │           │
 │           │ # ── Core Telemetry (5) ──
@@ -245,11 +252,16 @@ telemetryflow-hermes/
 │           ├── restart_pod.py            # ⚠
 │           ├── rollback_deploy.py        # ⚠
 │           └── update_alert.py           # ⚠
+│           │
+│           │ # ── RCA & Postmortem (3) ──
+│           ├── generate_rca_report.py    # 5W analysis, Jira/Trello
+│           ├── generate_postmortem.py    # Lessons learned, timeline
+│           └── generate_rca_template.py  # Blank template for manual review
 │
-├── tests/                               # 458 tests, 97% coverage
+├── tests/                               # 521 tests, 99% coverage
 │   ├── conftest.py                      # Shared fixtures
 │   ├── mocks/                           # MockTFOApi, response factories
-│   ├── unit/                            # 34 tool test files
+│   ├── unit/                            # 37 tool test files
 │   └── integration/                     # Pipeline integration tests
 │
 ├── cron/                                # Scheduled tasks
@@ -297,7 +309,7 @@ telemetryflow-hermes/
 
 ### 1. Python stdlib only (no pip dependencies)
 
-All 37 plugin tools use only Python standard library (`urllib`, `json`, `sys`, `os`). No `requests`, `httpx`, or external packages. This maximizes portability and eliminates supply chain risk.
+All 40 plugin tools use only Python standard library (`urllib`, `json`, `sys`, `os`). No `requests`, `httpx`, or external packages. This maximizes portability and eliminates supply chain risk.
 
 ### 2. All queries go through TFO API
 
@@ -319,15 +331,23 @@ ClickHouse queries are routed through `POST /api/v2/telemetry/query`, not direct
 
 **Total: ~$0.10-0.27/incident** (vs ~$0.39 with Claude-only)
 
-### 4. Separate contexts for bias prevention
+### 4. Adversarial scientist architecture with separate contexts
 
-The Reviewer agent runs in a completely separate context — it only sees the evidence and hypothesis, not the Investigator's thought process. This prevents:
+All agents operate as adversarial scientists who assume inputs are wrong and actively falsify hypotheses. The Reviewer agent runs in a completely separate context — it only sees the evidence and hypothesis, not the Investigator's thought process or dead hypotheses. This prevents:
 
 - Confirmation bias (defending conclusions)
 - Anchoring bias (overweighting initial findings)
 - Sunk cost bias (continuing a failed approach)
+- Conspiracy bias (accepting pre-falsified narratives)
 
-### 5. Human-in-the-loop for all mutations
+Verdicts are strictly CONFIRMED / NEEDS_MORE_EVIDENCE / REJECTED — "Looks good to me" is banned.
+
+### 5. Human-in-the-loop for all mutations (three-gate model)
+
+The Remediator enforces three gates before any action:
+1. **Confirmed root cause** — Reviewer verdict must be CONFIRMED
+2. **Proportional response** — action must fit the incident severity
+3. **Human approval** — explicit Telegram approval required
 
 Four tools require explicit human approval via Telegram:
 

@@ -7,7 +7,7 @@
 #
 # PROFILES:
 # - core:       Essential services (postgres, clickhouse, redis, nats, backend, frontend)
-# - monitoring: Observability stack (tfo-collector, tfo-agent, jaeger)
+# - monitoring: Observability stack (tfo-collector, tfo-agent)
 # - tools:      Management tools (portainer)
 # - all:        All services combined
 #
@@ -70,12 +70,12 @@ services:
   #----------------------------------------------------------------------------------------------
   tfo-hermes:
     container_name: ${CONTAINER_HERMES:-telemetryflow_hermes_agent}
-    image: ${IMAGE_NAME:-telemetryflow/telemetryflow-hermes}:${IMAGE_TAG:-2.0.0}
+    image: ${IMAGE_NAME:-telemetryflow/telemetryflow-hermes}:${IMAGE_TAG:-1.2.0}
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        VERSION: ${VERSION:-2.0.0}
+        VERSION: ${VERSION:-1.2.0}
         GIT_COMMIT: ${GIT_COMMIT:-unknown}
         GIT_BRANCH: ${GIT_BRANCH:-main}
         BUILD_TIME: ${BUILD_TIME:-unknown}
@@ -115,7 +115,7 @@ services:
       - TZ=${TZ:-UTC}
       - POSTGRES_USER=${POSTGRES_USERNAME:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-telemetryflow123}
-      - POSTGRES_DB=${POSTGRES_DB:-telemetryflow_db}
+      - POSTGRES_DB=${TELEMETRYFLOW_DB_NAME:-telemetryflow_db}
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - ${DATA_POSTGRESQL:-${VOLUMES_BASE_PATH:-/opt/data/docker/telemetryflow-hermes}/postgresql}:/var/lib/postgresql/data
@@ -123,7 +123,7 @@ services:
       telemetryflow_hermes_net:
         ipv4_address: ${CONTAINER_IP_POSTGRES:-172.155.151.20}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME:-postgres} -d ${POSTGRES_DB:-telemetryflow_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME:-postgres} -d ${TELEMETRYFLOW_DB_NAME:-telemetryflow_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -144,7 +144,7 @@ services:
       - "${PORT_CLICKHOUSE_METRICS:-9363}:9363"
     environment:
       - TZ=${TZ:-UTC}
-      - CLICKHOUSE_DB=${CLICKHOUSE_DB:-telemetryflow_db}
+      - CLICKHOUSE_DB=${TELEMETRYFLOW_DB_NAME:-telemetryflow_db}
       - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
       - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-telemetryflow123}
     volumes:
@@ -241,14 +241,14 @@ services:
       # PostgreSQL
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-telemetryflow_db}
+      - POSTGRES_DB=${TELEMETRYFLOW_DB_NAME:-telemetryflow_db}
       - POSTGRES_USERNAME=${POSTGRES_USERNAME:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-telemetryflow123}
 
       # ClickHouse
       - CLICKHOUSE_HOST=clickhouse
       - CLICKHOUSE_PORT=8123
-      - CLICKHOUSE_DB=${CLICKHOUSE_DB:-telemetryflow_db}
+      - CLICKHOUSE_DB=${TELEMETRYFLOW_DB_NAME:-telemetryflow_db}
       - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
       - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-telemetryflow123}
 

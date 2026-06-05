@@ -1,6 +1,6 @@
 [project]
 name = "telemetryflow-hermes"
-version = "2.0.0"
+version = "1.2.0"
 description = "Self-improving AI agent integration for TelemetryFlow Observability Platform"
 requires-python = ">=3.8"
 license = "Apache-2.0"
@@ -42,7 +42,7 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM"]
-ignore = ["E501", "SIM117"]
+ignore = ["E501", "SIM105", "SIM117"]
 
 [tool.mypy]
 python_version = "3.8"

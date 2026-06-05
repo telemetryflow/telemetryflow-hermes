@@ -214,6 +214,17 @@ class TestParseArgs:
             args = _shared.parse_args()
         assert args == {"flag": "true", "key": "val"}
 
+    def test_ignores_non_flag_args(self):
+        import importlib
+
+        import _shared
+
+        importlib.reload(_shared)
+
+        with mock.patch("sys.argv", ["prog", "positional", "--key", "val", "another_pos"]):
+            result = _shared.parse_args()
+        assert result["key"] == "val"
+
 
 class TestOutputJson:
     def test_prints_formatted_json(self, capture_stdout):

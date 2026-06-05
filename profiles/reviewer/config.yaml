@@ -29,5 +29,19 @@ allowed_clickhouse_tables:
   - otel_logs
   - otel_traces
   - exemplars
+  - exemplars_1h
+  - signal_correlations_1h
+  - service_latency_percentiles_1h
+  - service_error_rates_1h
+  - logs_1h
+  - qan_metrics
+  - audit_logs
+  - audit_logs_1h
+  - uptime_checks
+  - kubernetes_metrics_1h
+  - vm_metrics_1h
+  - service_map_metrics_1h
+  - network_map_traffic_1h
+  - network_map_connection_metrics_1h
 
 readonly: true

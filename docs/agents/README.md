@@ -7,16 +7,18 @@ The TelemetryFlow Hermes multi-agent team uses Hermes profiles — each agent ha
 ```mermaid
 graph TD
     ALERT["Alert Fired<br/>TFO Webhook / Telegram"]
-    TRIAGE["<b>Triage</b><br/>Classify · Route"]
-    INV["<b>Investigator</b><br/>Query · Correlate · Hypothesize"]
-    REV["<b>Reviewer</b><br/>Verify · Challenge · Approve"]
-    REM["<b>Remediator</b><br/>Propose · Gate · Execute"]
+    TRIAGE["<b>Triage</b><br/>Paranoid Gatekeeper"]
+    INV["<b>Investigator</b><br/>Hostile Scientist"]
+    REV["<b>Reviewer</b><br/>Professional Skeptic"]
+    REM["<b>Remediator</b><br/>Cautious Pragmatist"]
     HUMAN["<b>Human</b><br/>Approve / Reject"]
 
     ALERT --> TRIAGE
     TRIAGE -->|"genuine anomaly"| INV
+    TRIAGE -->|"INCOMPLETE"| CHALLENGE["Issue challenge<br/>to Investigator"]
     TRIAGE -->|"known pattern"| RESOLVED["Auto-resolve<br/>(from MEMORY.md)"]
     TRIAGE -->|"noise"| DISCARD["Discard"]
+    CHALLENGE --> INV
     INV --> REV
     REV -->|"approved"| REM
     REV -->|"rejected"| INV
@@ -32,12 +34,14 @@ graph TD
 
 ## Agent Profiles
 
+All agents operate as adversarial scientists — they assume inputs are wrong, actively falsify hypotheses, and never trust without proof.
+
 | Agent            | Model                         | Max Turns | Role                     | Tools                             |
 | ---------------- | ----------------------------- | --------- | ------------------------ | --------------------------------- |
-| **Triage**       | glm-5.1 (OpenCode Go)         | 30        | Classify and route       | terminal, web, delegation         |
-| **Investigator** | claude-sonnet-4-5 (Anthropic) | 45        | Evidence gathering       | terminal, web, delegation         |
-| **Reviewer**     | glm-5.1 (OpenCode Go)         | 20        | Independent verification | terminal, web (read-only)         |
-| **Remediator**   | glm-5.1 (OpenCode Go)         | 15        | Gated remediation        | terminal, web (approval required) |
+| **Triage**       | glm-5.1 (OpenCode Go)         | 30        | Paranoid gatekeeper      | terminal, web, delegation         |
+| **Investigator** | claude-sonnet-4-5 (Anthropic) | 45        | Hostile scientist        | terminal, web, delegation         |
+| **Reviewer**     | glm-5.1 (OpenCode Go)         | 20        | Professional skeptic     | terminal, web (read-only)         |
+| **Remediator**   | glm-5.1 (OpenCode Go)         | 15        | Cautious pragmatist      | terminal, web (approval required) |
 
 ## Delegation Model
 
@@ -51,22 +55,28 @@ sequenceDiagram
 
     Note over T: Alert received
     T->>T: Read MEMORY.md
-    T->>T: Classify: critical/known/noise
+    T->>T: Classify: critical/known/noise/INCOMPLETE
     alt Known pattern
         T->>T: Auto-resolve
+    else INCOMPLETE classification
+        T->>I: delegate(task, context, challenge)
     else Genuine anomaly
         T->>I: delegate(task, context)
         Note over I: Fresh context, full tool access
         I->>I: query_metrics + search_logs + list_traces + get_exemplars
-        I->>I: Form root cause hypothesis
-        I->>R: delegate(evidence, hypothesis)
+        I->>I: Falsify hypotheses — guilty until proven innocent
+        I->>I: Document dead hypotheses
+        I->>R: delegate(evidence, surviving hypothesis)
         Note over R: Separate context, read-only tools
-        R->>R: Verify evidence independently
-        R->>M: Approved hypothesis + recommended actions
-        Note over M: Approval gate on all write ops
+        R->>R: Hunt for disconfirming evidence
+        R->>R: Verdict: CONFIRMED / NEEDS_MORE_EVIDENCE / REJECTED
+        R->>M: CONFIRMED hypothesis + recommended actions
+        Note over M: Three gates: root cause, proportional, approval
+        M->>M: Blast radius analysis
         M->>H: Telegram notification
         H->>M: Approve
         M->>M: Execute remediation
+        M->>M: Post-action verification
     end
 ```
 
@@ -120,7 +130,7 @@ This prevents:
 
 ## Detailed Agent Docs
 
-- [Triage Agent](./triage.md) — Alert classification and routing
-- [Investigator Agent](./investigator.md) — Evidence gathering and root cause analysis
-- [Reviewer Agent](./reviewer.md) — Independent verification
-- [Remediator Agent](./remediator.md) — Gated remediation
+- [Triage Agent](./triage.md) — Paranoid gatekeeper: assumes alerts lie, zero hallucination
+- [Investigator Agent](./investigator.md) — Hostile scientist: falsification-first root cause analysis
+- [Reviewer Agent](./reviewer.md) — Professional skeptic: hunts disconfirming evidence
+- [Remediator Agent](./remediator.md) — Cautious pragmatist: three-gate remediation

@@ -42,6 +42,9 @@ def _setup_path():
             "restart_pod",
             "rollback_deploy",
             "update_alert",
+            "generate_rca_report",
+            "generate_postmortem",
+            "generate_rca_template",
         ):
             del sys.modules[mod_name]
 

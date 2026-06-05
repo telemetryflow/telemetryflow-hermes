@@ -130,7 +130,7 @@ ls ~/.hermes/plugins/telemetryflow/tools/
 **Solutions**:
 | Cause | Fix |
 |-------|-----|
-| Plugin not installed | `make plugins` |
+| Plugin not installed | `make configure` |
 | Tools disabled | `hermes tools enable terminal && hermes tools enable web` |
 | Python 3 not found | `which python3` — ensure Python 3.8+ is installed |
 | Permission denied | `chmod +x ~/.hermes/plugins/telemetryflow/tools/*.py` |
@@ -153,7 +153,7 @@ echo $TELEMETRYFLOW_ORGANIZATION_ID
 
 # Test direct ClickHouse query
 clickhouse-client --user=hermes_readonly \
-  --query "SELECT count() FROM telemetryflow.metrics_1m LIMIT 1"
+  --query "SELECT count() FROM ${TELEMETRYFLOW_DB_NAME:-telemetryflow_db}.metrics_1m LIMIT 1"
 ```
 
 **Solutions**:

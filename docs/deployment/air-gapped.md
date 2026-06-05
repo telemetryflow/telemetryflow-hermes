@@ -153,7 +153,7 @@ CLICKHOUSE_DATABASE=telemetryflow
 ### Step 6 — Deploy and Start
 
 ```bash
-make setup
+make init
 make verify
 make deploy
 ```

@@ -11,7 +11,7 @@
 #
 # Options:
 #   -b, --build           Build the Hermes image
-#   -t, --tag <version>   Override version tag (default: 2.0.0)
+#   -t, --tag <version>   Override version tag (default: 1.2.0)
 #   -p, --push            Push tags to registry
 #   -c, --complete        Complete: build, tag, and push
 #   --profile <name>      Start with docker-compose profile (core, monitoring, all, tools)
@@ -41,7 +41,7 @@ set -euo pipefail
 # Config
 # ---------------------------------------------------------------------------
 IMAGE_HERMES="telemetryflow/telemetryflow-hermes"
-VERSION="1.0.0"
+VERSION="1.2.0"
 COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 YYYYMMDD=$(date +"%Y%m%d")
 
@@ -66,7 +66,7 @@ Options:
 
 Examples:
   $0                        # Build Hermes, tag only
-  $0 -b -t 2.1.0            # Build with custom tag
+  $0 -b -t 1.2.0            # Build with custom tag
   $0 -c                     # Build, tag, push
   $0 --up                   # Start Hermes only
   $0 --up --profile core    # Start with core profile

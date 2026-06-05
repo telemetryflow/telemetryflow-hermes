@@ -145,6 +145,12 @@ class TestManageAlerts:
             tool.main()
             mock_exit.assert_called()
 
+    def test_rule_detail_missing_id(self, mock_env, mock_exit):
+        with mock.patch("sys.argv", ["manage_alerts.py", "--resource", "rule-detail"]):
+            tool = _import_tool()
+            tool.main()
+            mock_exit.assert_called_with(1)
+
     def test_api_error_exits(self, mock_env, mock_urlopen_error, mock_exit):
         with mock.patch("sys.argv", ["manage_alerts.py", "--resource", "rules"]):
             tool = _import_tool()

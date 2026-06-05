@@ -49,7 +49,7 @@ on:
 env:
   PYTHON_VERSION: "3.12"
   PRODUCT_NAME: TelemetryFlow Hermes
-  VERSION: "2.0.0"
+  VERSION: "1.2.0"
 
 permissions:
   contents: read

@@ -213,6 +213,32 @@ class TestQueryTFQL:
                 tool.main()
             mock_exit.assert_called_with(1)
 
+    def test_metrics_with_service_name(self, mock_env, mock_urlopen, capture_stdout):
+        m, mock_resp = mock_urlopen
+        mock_resp.read.return_value = json.dumps({"data": []}).encode("utf-8")
+
+        with mock.patch(
+            "sys.argv",
+            ["query_tfql.py", "--signal", "metrics", "--service_name", "payments-api", "--percentiles", "50,95,99"],
+        ):
+            tool = _import_tool()
+            tool.main()
+
+        assert m.call_count >= 1
+
+    def test_logs_query_with_service_name(self, mock_env, mock_urlopen, capture_stdout):
+        m, mock_resp = mock_urlopen
+        mock_resp.read.return_value = json.dumps({"data": []}).encode("utf-8")
+
+        with mock.patch(
+            "sys.argv",
+            ["query_tfql.py", "--signal", "logs", "--action", "query", "--service_name", "auth-svc"],
+        ):
+            tool = _import_tool()
+            tool.main()
+
+        assert m.call_count >= 1
+
     def test_no_api_key_exits(self, mock_exit):
         env = {k: v for k, v in os.environ.items() if k != "TELEMETRYFLOW_API_KEY"}
         with mock.patch.dict(os.environ, env, clear=True), mock.patch(

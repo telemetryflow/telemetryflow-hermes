@@ -68,6 +68,31 @@ class TestCheckAgent:
 
         assert "limit=50" in m.call_args[0][0].full_url
 
+    def test_health_with_time_range(self, mock_env, mock_urlopen, capture_stdout):
+        m, mock_resp = mock_urlopen
+        mock_resp.read.return_value = json.dumps({"data": []}).encode("utf-8")
+
+        with mock.patch(
+            "sys.argv",
+            [
+                "check_agent.py",
+                "--resource",
+                "health",
+                "--agent_id",
+                "agent-1",
+                "--from",
+                "2026-01-01",
+                "--to",
+                "2026-01-02",
+            ],
+        ):
+            tool = _import_tool()
+            tool.main()
+
+        url = m.call_args[0][0].full_url
+        assert "from=2026-01-01" in url
+        assert "to=2026-01-02" in url
+
     def test_stats(self, mock_env, mock_urlopen, capture_stdout):
         m, mock_resp = mock_urlopen
         mock_resp.read.return_value = json.dumps({"total": 10, "online": 8}).encode("utf-8")

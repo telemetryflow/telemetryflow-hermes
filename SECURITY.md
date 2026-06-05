@@ -7,13 +7,13 @@
 
   <h3>TelemetryFlow Hermes — Self-Improving AI Agent for Observability Incident Response</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.0.0-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.2.0-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python)](https://www.python.org/)
 [![Hermes](https://img.shields.io/badge/Hermes-Agent-00d4aa)](https://github.com/NousResearch/hermes-agent)
-[![Tests](https://img.shields.io/badge/Tests-458%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-472%20passing-brightgreen.svg)](tests/)
 [![Coverage](https://img.shields.io/badge/Coverage-97%25-brightgreen.svg)](tests/)
-[![Tools](https://img.shields.io/badge/Tools-37%20Plugin-blueviolet)](plugins/telemetryflow/plugin.yaml)
+[![Tools](https://img.shields.io/badge/Tools-40%20Plugin-blueviolet)](plugins/telemetryflow/plugin.yaml)
 [![ContextTypes](https://img.shields.io/badge/ContextTypes-74-9cf)](docs/api/context-types.md)
 [![ClickHouse](https://img.shields.io/badge/ClickHouse-Readonly-FFCC00?logo=clickhouse)](security/clickhouse-readonly.sql)
 [![Docs](https://img.shields.io/badge/Docs-28%20Pages-informational)](docs/)
@@ -28,8 +28,8 @@
 
 | Version | Supported          | Status             |
 | ------- | ------------------ | ------------------ |
-| 2.0.x   | :white_check_mark: | Active development |
-| < 2.0   | :x:                | Not supported      |
+| 1.2.x   | :white_check_mark: | Active development |
+| < 1.2   | :x:                | Not supported      |
 
 ## Reporting a Vulnerability
 

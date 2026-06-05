@@ -8,6 +8,11 @@
 # This Makefile provides standardized commands for development, testing,
 # deployment, and CI/CD of TelemetryFlow Hermes multi-agent integration.
 #
+# QUICK START:
+#   make init          # First-time setup (install hermes + configure + deploy)
+#   make verify        # Check everything is working
+#   make doctor        # Health check + auto-fix
+#
 # =============================================================================
 
 # Build variables
@@ -19,13 +24,14 @@ BUILD_TIME := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo "unknown
 PYTHON_VERSION := $(shell python3 --version 2>&1 | cut -d ' ' -f 2)
 
 # Paths
-HERMES_HOME ?= ~/.hermes
+HERMES_HOME ?= $(HOME)/.hermes
 PROJECT_DIR := $(shell pwd)
 BUILD_DIR := build
 DIST_DIR := dist
 PLUGINS_DIR := plugins
 TESTS_DIR := tests
 COVERAGE_SOURCE := plugins/telemetryflow/tools
+ENV_FILE := $(HERMES_HOME)/.env
 
 # Tools
 PYTHON := python3
@@ -50,9 +56,21 @@ NC := \033[0m
 
 .PHONY: help
 help: ## Show this help message
-	@echo "$(BLUE)$(PRODUCT_NAME) - Makefile$(NC)"
+	@echo "$(BLUE)TelemetryFlow Hermes - Makefile$(NC)"
 	@echo ""
-	@echo "$(YELLOW)Available targets:$(NC)"
+	@echo "$(YELLOW)Setup & Deploy:$(NC)"
+	@echo "  $(GREEN)make init$(NC)              # First-time setup (install → env → configure → deploy)"
+	@echo "  $(GREEN)make configure$(NC)          # Copy .env + install config, profiles, skills, plugins"
+	@echo "  $(GREEN)make deploy$(NC)             # Start all 4 Telegram gateways"
+	@echo "  $(GREEN)make verify$(NC)             # End-to-end verification"
+	@echo "  $(GREEN)make doctor$(NC)             # Health check + auto-fix"
+	@echo ""
+	@echo "$(YELLOW)Docker:$(NC)"
+	@echo "  $(GREEN)make docker-build$(NC)       # Build Docker image"
+	@echo "  $(GREEN)make docker-up$(NC)           # Start Hermes container"
+	@echo "  $(GREEN)make docker-down$(NC)         # Stop all containers"
+	@echo ""
+	@echo "$(YELLOW)Development:$(NC)"
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  $(GREEN)%-30s$(NC) %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@echo ""
 	@echo "$(YELLOW)Variables:$(NC)"
@@ -63,6 +81,187 @@ help: ## Show this help message
 	@echo "  PYTHON       = $(PYTHON_VERSION)"
 	@echo "  PYTEST       = $(shell $(PYTEST) --version 2>/dev/null | head -1 || echo 'not installed')"
 	@echo "  RUFF         = $(shell $(RUFF) --version 2>/dev/null || echo 'not installed')"
+
+# =============================================================================
+# Setup & Deploy (Main Targets)
+# =============================================================================
+
+.PHONY: init
+init: install configure ## First-time setup: install hermes, configure, deploy everything
+	@echo ""
+	@echo "$(GREEN)========================================$(NC)"
+	@echo "$(GREEN) TelemetryFlow Hermes is ready!$(NC)"
+	@echo "$(GREEN)========================================$(NC)"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  1. Edit $(ENV_FILE) with your API keys"
+	@echo "  2. make verify   # check everything works"
+	@echo "  3. make deploy   # start the agent gateways"
+
+.PHONY: install
+install: ## Install Hermes Agent framework
+	@echo "$(BLUE)Installing Hermes Agent...$(NC)"
+	@command -v hermes >/dev/null 2>&1 && { \
+		echo "$(GREEN)Hermes already installed: $$(hermes --version 2>/dev/null || echo 'unknown')$(NC)"; \
+	} || { \
+		curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash; \
+		echo "$(GREEN)Hermes installed. Run: source ~/.bashrc$(NC)"; \
+	}
+
+.PHONY: configure
+configure: env profiles skills plugins cron hooks ## Configure hermes home (env, profiles, skills, plugins, cron, hooks)
+	@echo "$(GREEN)Configuration complete.$(NC)"
+
+.PHONY: env
+env: ## Setup .env file from .env.example
+	@echo "$(BLUE)Setting up environment...$(NC)"
+	@mkdir -p $(HERMES_HOME)
+	@if [ ! -f $(ENV_FILE) ]; then \
+		cp .env.example $(ENV_FILE); \
+		echo "$(YELLOW)Created $(ENV_FILE) from .env.example$(NC)"; \
+		echo "$(YELLOW)Edit it with your API keys before deploying.$(NC)"; \
+	else \
+		echo "$(GREEN)$(ENV_FILE) already exists$(NC)"; \
+	fi
+	@if [ ! -f $(HERMES_HOME)/config.yaml ]; then \
+		cp config.yaml $(HERMES_HOME)/config.yaml; \
+		echo "$(GREEN)Installed config.yaml$(NC)"; \
+	fi
+	@if [ ! -f $(HERMES_HOME)/SOUL.md ]; then \
+		cp SOUL.md $(HERMES_HOME)/SOUL.md; \
+		echo "$(GREEN)Installed SOUL.md$(NC)"; \
+	fi
+
+.PHONY: profiles
+profiles: ## Create 4 agent profiles (triage, investigator, reviewer, remediator)
+	@echo "$(BLUE)Installing agent profiles...$(NC)"
+	@for profile in triage investigator reviewer remediator; do \
+		if [ -d "$(HERMES_HOME)/profiles/$$profile" ]; then \
+			echo "  [skip] $$profile (exists)"; \
+		else \
+			mkdir -p "$(HERMES_HOME)/profiles/$$profile"/memories; \
+			echo "  [install] $$profile"; \
+		fi; \
+		cp profiles/$$profile/SOUL.md "$(HERMES_HOME)/profiles/$$profile/SOUL.md" 2>/dev/null || true; \
+		cp profiles/$$profile/config.yaml "$(HERMES_HOME)/profiles/$$profile/config.yaml" 2>/dev/null || true; \
+		cp profiles/$$profile/memories/MEMORY.md "$(HERMES_HOME)/profiles/$$profile/memories/MEMORY.md" 2>/dev/null || true; \
+		cp profiles/$$profile/memories/USER.md "$(HERMES_HOME)/profiles/$$profile/memories/USER.md" 2>/dev/null || true; \
+	done
+
+.PHONY: skills
+skills: ## Install all 29 skills (18 categories)
+	@echo "$(BLUE)Installing skills...$(NC)"
+	@mkdir -p $(HERMES_HOME)/skills
+	@for dir in skills/*/; do \
+		category=$$(basename $$dir); \
+		mkdir -p "$(HERMES_HOME)/skills/$$category"; \
+		for skill in skills/$$category/*/; do \
+			skill_name=$$(basename $$skill); \
+			cp -r $$skill "$(HERMES_HOME)/skills/$$category/" 2>/dev/null || true; \
+		done; \
+	done
+	@skill_count=$$(find $(HERMES_HOME)/skills -name 'SKILL.md' | wc -l | tr -d ' '); \
+		echo "  Installed $$skill_count skills"
+
+.PHONY: plugins
+plugins: ## Install TelemetryFlow plugin (37 tools)
+	@echo "$(BLUE)Installing TelemetryFlow plugin...$(NC)"
+	@mkdir -p $(HERMES_HOME)/plugins/telemetryflow
+	@cp -r plugins/telemetryflow/* $(HERMES_HOME)/plugins/telemetryflow/
+	@tool_count=$$(ls $(HERMES_HOME)/plugins/telemetryflow/tools/*.py 2>/dev/null | grep -v __pycache__ | wc -l | tr -d ' '); \
+		echo "  Installed $$tool_count tools"
+
+.PHONY: cron
+cron: ## Install 6 scheduled investigation jobs
+	@echo "$(BLUE)Installing cron jobs...$(NC)"
+	@mkdir -p $(HERMES_HOME)/cron
+	@cp cron/jobs.json $(HERMES_HOME)/cron/jobs.json
+
+.PHONY: hooks
+hooks: ## Install 3 lifecycle hooks
+	@echo "$(BLUE)Installing lifecycle hooks...$(NC)"
+	@mkdir -p $(HERMES_HOME)/hooks
+	@cp hooks/*.sh $(HERMES_HOME)/hooks/
+	@chmod +x $(HERMES_HOME)/hooks/*.sh
+
+.PHONY: telegram
+telegram: ## Configure 4 Telegram gateway bots
+	@echo "$(BLUE)Setting up Telegram gateways...$(NC)"
+	@bash scripts/setup-telegram.sh
+
+.PHONY: deploy
+deploy: ## Start all 4 agent gateways (triage, investigator, reviewer, remediator)
+	@echo "$(BLUE)Starting agent gateways...$(NC)"
+	@hermes -p triage gateway start &
+	@hermes -p investigator gateway start &
+	@hermes -p reviewer gateway start &
+	@hermes -p remediator gateway start &
+	@echo "$(GREEN)All gateways started. Use 'make status' to check.$(NC)"
+
+.PHONY: stop
+stop: ## Stop all agent gateways
+	@echo "$(BLUE)Stopping agent gateways...$(NC)"
+	@hermes -p triage gateway stop 2>/dev/null || true
+	@hermes -p investigator gateway stop 2>/dev/null || true
+	@hermes -p reviewer gateway stop 2>/dev/null || true
+	@hermes -p remediator gateway stop 2>/dev/null || true
+	@echo "$(GREEN)All gateways stopped.$(NC)"
+
+.PHONY: status
+status: ## Check all 4 gateway statuses
+	@echo "$(BLUE)Gateway statuses:$(NC)"
+	@hermes -p triage gateway status 2>/dev/null || echo "  triage: not running"
+	@hermes -p investigator gateway status 2>/dev/null || echo "  investigator: not running"
+	@hermes -p reviewer gateway status 2>/dev/null || echo "  reviewer: not running"
+	@hermes -p remediator gateway status 2>/dev/null || echo "  remediator: not running"
+
+.PHONY: verify
+verify: ## End-to-end pipeline verification
+	@echo "$(BLUE)Verifying pipeline...$(NC)"
+	@bash scripts/verify-pipeline.sh
+
+.PHONY: doctor
+doctor: ## Run hermes doctor --fix
+	@hermes doctor --fix
+
+.PHONY: air-gapped
+air-gapped: ## Deploy with Ollama (offline, no external network)
+	@echo "$(BLUE)Deploying air-gapped configuration...$(NC)"
+	@bash scripts/deploy-air-gapped.sh
+
+# =============================================================================
+# Docker
+# =============================================================================
+
+.PHONY: docker-build
+docker-build: ## Build Docker image
+	@echo "$(BLUE)Building Docker image...$(NC)"
+	docker build \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
+		--build-arg GIT_BRANCH=$(GIT_BRANCH) \
+		--build-arg BUILD_TIME=$(BUILD_TIME) \
+		-t telemetryflow/telemetryflow-hermes:$(VERSION) \
+		-t telemetryflow/telemetryflow-hermes:latest \
+		.
+
+.PHONY: docker-up
+docker-up: ## Start Hermes container (use PROFILE=core to include platform)
+	@echo "$(BLUE)Starting containers...$(NC)"
+	docker compose --profile $${PROFILE:-} up -d
+
+.PHONY: docker-down
+docker-down: ## Stop all containers
+	@echo "$(BLUE)Stopping containers...$(NC)"
+	docker compose --profile all down
+
+.PHONY: docker-logs
+docker-logs: ## Tail Hermes container logs
+	docker compose logs -f tfo-hermes
+
+.PHONY: docker-status
+docker-status: ## Show container statuses
+	docker compose ps
 
 # =============================================================================
 # Build
@@ -84,105 +283,11 @@ build-release: clean ## Build optimized release package
 	@echo "$(GREEN)Release build complete: $(DIST_DIR)/$(NC)"
 
 # =============================================================================
-# Install & Setup
+# Clean
 # =============================================================================
-
-.PHONY: install
-install: ## Install Hermes Agent framework
-	@echo "$(BLUE)Installing Hermes Agent...$(NC)"
-	curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
-	@echo "$(GREEN)Run: source ~/.bashrc$(NC)"
-
-.PHONY: setup
-setup: profiles skills cron security hooks plugins ## Deploy all profiles, skills, cron, security, hooks, plugins
-	@echo "$(GREEN)TelemetryFlow Hermes setup complete.$(NC)"
-
-.PHONY: profiles
-profiles: ## Create 4 agent profiles (triage, investigator, reviewer, remediator)
-	@echo "$(BLUE)Creating agent profiles...$(NC)"
-	@bash scripts/setup-profiles.sh
-
-.PHONY: skills
-skills: ## Install all skills (monitoring, database, observability, platform)
-	@echo "$(BLUE)Installing skills...$(NC)"
-	@mkdir -p $(HERMES_HOME)/skills
-	@for dir in $$(ls -d skills/*/ 2>/dev/null); do \
-		category=$$(basename $$dir); \
-		echo "  Installing category: $$category"; \
-		mkdir -p $(HERMES_HOME)/skills/$$category; \
-		for skill in $$(ls -d skills/$$category/*/ 2>/dev/null); do \
-			skill_name=$$(basename $$skill); \
-			echo "    Installing: $$category/$$skill_name"; \
-			cp -r $$skill $(HERMES_HOME)/skills/$$category/ 2>/dev/null || true; \
-		done; \
-	done
-
-.PHONY: cron
-cron: ## Install 6 scheduled investigation jobs
-	@echo "$(BLUE)Installing cron jobs...$(NC)"
-	mkdir -p $(HERMES_HOME)/cron
-	cp cron/jobs.json $(HERMES_HOME)/cron/jobs.json
-
-.PHONY: security
-security: ## Setup ClickHouse read-only user (hermes_readonly, 20 tables)
-	@echo "$(BLUE)Setting up security...$(NC)"
-	@bash security/setup-readonly-user.sh 2>/dev/null || echo "  $(YELLOW)Skipping ClickHouse setup (run manually)$(NC)"
-
-.PHONY: hooks
-hooks: ## Install 3 lifecycle hooks (on-alert-fired, pre-investigation, post-remediation)
-	@echo "$(BLUE)Installing lifecycle hooks...$(NC)"
-	mkdir -p $(HERMES_HOME)/hooks
-	cp hooks/*.sh $(HERMES_HOME)/hooks/
-	@chmod +x $(HERMES_HOME)/hooks/*.sh
-
-.PHONY: plugins
-plugins: ## Install TelemetryFlow plugin (37 tools)
-	@echo "$(BLUE)Installing TelemetryFlow plugin...$(NC)"
-	mkdir -p $(HERMES_HOME)/plugins/telemetryflow
-	cp -r plugins/telemetryflow/* $(HERMES_HOME)/plugins/telemetryflow/
-
-.PHONY: telegram
-telegram: ## Configure 4 Telegram gateway bots
-	@echo "$(BLUE)Setting up Telegram gateways...$(NC)"
-	@bash scripts/setup-telegram.sh
-
-# =============================================================================
-# Deploy & Operations
-# =============================================================================
-
-.PHONY: deploy
-deploy: setup ## Setup + start all 4 Telegram gateways
-	@echo "$(BLUE)Starting gateways...$(NC)"
-	hermes -p triage gateway start &
-	hermes -p investigator gateway start &
-	hermes -p reviewer gateway start &
-	hermes -p remediator gateway start &
-	@echo "$(GREEN)All gateways started. Use 'make status' to check.$(NC)"
-
-.PHONY: status
-status: ## Check all 4 gateway statuses
-	@echo "$(BLUE)Checking gateway statuses...$(NC)"
-	hermes -p triage gateway status
-	hermes -p investigator gateway status
-	hermes -p reviewer gateway status
-	hermes -p remediator gateway status
-
-.PHONY: verify
-verify: ## Run end-to-end pipeline verification
-	@echo "$(BLUE)Verifying pipeline...$(NC)"
-	@bash scripts/verify-pipeline.sh
-
-.PHONY: doctor
-doctor: ## Run hermes doctor --fix
-	hermes doctor --fix
-
-.PHONY: air-gapped
-air-gapped: ## Deploy with Ollama (offline, no external network)
-	@echo "$(BLUE)Deploying air-gapped configuration...$(NC)"
-	@bash scripts/deploy-air-gapped.sh
 
 .PHONY: clean
-clean: ## Remove all installed components, build artifacts, and coverage files
+clean: ## Remove installed components, build artifacts, and coverage files
 	@echo "$(BLUE)Cleaning...$(NC)"
 	rm -rf $(HERMES_HOME)/profiles/triage
 	rm -rf $(HERMES_HOME)/profiles/investigator
@@ -572,7 +677,7 @@ health: ## Check TelemetryFlow Platform health
 .PHONY: version
 version: ## Show version information
 	@echo "$(BLUE)Version Information:$(NC)"
-	@echo "  Product:     $(PRODUCT_NAME)"
+	@echo "  Product:     TelemetryFlow Hermes"
 	@echo "  Version:     $(VERSION)"
 	@echo "  Git Commit:  $(GIT_COMMIT)"
 	@echo "  Git Branch:  $(GIT_BRANCH)"
@@ -589,11 +694,11 @@ info: version ## Alias for version
 # =============================================================================
 
 .PHONY: start
-start: deps setup ## Install deps + deploy everything
+start: deps configure ## Install deps + deploy everything
 	@echo "$(GREEN)Ready for development$(NC)"
 
 .PHONY: reset
-reset: clean setup ## Clean + re-deploy all components
+reset: clean configure ## Clean + re-deploy all components
 	@echo "$(GREEN)Environment reset completed$(NC)"
 
 # =============================================================================

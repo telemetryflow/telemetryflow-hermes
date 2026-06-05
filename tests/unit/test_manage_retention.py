@@ -78,6 +78,17 @@ class TestManageRetention:
             tool.main()
             mock_exit.assert_called()
 
+    def test_policies_with_include_defaults(self, mock_env, mock_urlopen, capture_stdout):
+        m, mock_resp = mock_urlopen
+        mock_resp.read.return_value = json.dumps({"data": []}).encode("utf-8")
+
+        with mock.patch("sys.argv", ["manage_retention.py", "--resource", "policies", "--include_defaults", "true"]):
+            tool = _import_tool()
+            tool.main()
+
+        url = m.call_args[0][0].full_url
+        assert "includeDefaults=true" in url
+
     def test_api_error_exits(self, mock_env, mock_urlopen_error, mock_exit):
         with mock.patch("sys.argv", ["manage_retention.py", "--resource", "policies"]):
             tool = _import_tool()

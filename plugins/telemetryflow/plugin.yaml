@@ -1,5 +1,5 @@
 name: telemetryflow
-version: 3.0.0
+version: 1.2.0
 description: >
   Full TelemetryFlow observability platform integration for Hermes Agent.
   Covers all 20 TFO Platform modules: core telemetry (metrics, logs, traces),
@@ -278,6 +278,30 @@ tools:
     command: python3
     args: ["${PLUGIN_DIR}/tools/update_alert.py"]
     requires_approval: true
+
+  # ── RCA & Postmortem Reports ──
+  - name: generate_rca_report
+    description: >
+      Generate Root Cause Analysis report with 5W analysis, timeline, mermaid diagrams,
+      and Jira/Trello ticket summaries. Actions: rca (full report), jira (report + Jira ticket),
+      trello (report + Trello card), all (report + both tickets).
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/generate_rca_report.py"]
+
+  - name: generate_postmortem
+    description: >
+      Generate full postmortem report with timeline, lessons learned, action items,
+      mermaid diagrams, and appendix. Actions: postmortem (full report), template (blank template).
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/generate_postmortem.py"]
+
+  - name: generate_rca_template
+    description: >
+      Generate blank RCA report template for manual review. Includes all sections:
+      5W analysis, timeline, root cause deep dive, lessons learned, action items,
+      Jira/Trello summary, approval signatures. Ready for human fill-in.
+    command: python3
+    args: ["${PLUGIN_DIR}/tools/generate_rca_template.py"]
 
 environment:
   TELEMETRYFLOW_API_URL:

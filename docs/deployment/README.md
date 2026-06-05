@@ -63,12 +63,11 @@ git clone https://github.com/telemetryflow/telemetryflow-hermes.git
 cd telemetryflow-hermes
 
 # Configure
-cp .env.example ~/.hermes/.env
+make env
 # Edit ~/.hermes/.env with your keys
 
 # Deploy
-make setup
-make telegram
+make init
 make verify
 make deploy
 ```

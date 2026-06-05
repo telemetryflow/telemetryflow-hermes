@@ -2,6 +2,8 @@
 
 Database security for Hermes agents — read-only user with table-level SELECT grants on 20 telemetry tables.
 
+> **Database name**: All SQL uses `${TELEMETRYFLOW_DB_NAME}` (default: `telemetryflow_db`). The shell script substitutes this automatically. If running SQL manually, replace with your actual database name.
+
 ## Access Model
 
 ```mermaid
@@ -41,17 +43,19 @@ graph LR
 ```sql
 CREATE USER IF NOT EXISTS hermes_readonly
   IDENTIFIED BY 'CHANGE_ME_SECURE_PASSWORD'
-  DEFAULT DATABASE telemetryflow
+  DEFAULT DATABASE ${TELEMETRYFLOW_DB_NAME}
   SETTINGS readonly = 1;
 
-GRANT SELECT ON telemetryflow.* TO hermes_readonly;
+GRANT SELECT ON ${TELEMETRYFLOW_DB_NAME}.* TO hermes_readonly;
 ```
 
 ### Automated Setup
 
 ```bash
-bash security/setup-readonly-user.sh
+bash security/setup-readonly-user.sh <password>
 ```
+
+The script reads `TELEMETRYFLOW_DB_NAME` from your `.env` file (default: `telemetryflow_db`) and substitutes it into the SQL template.
 
 ## Table-Level Grants
 
@@ -137,11 +141,11 @@ clickhouse-client --user=default --query "SHOW GRANTS FOR hermes_readonly"
 
 # Test read access (should succeed)
 clickhouse-client --user=hermes_readonly --password=CHANGE_ME \
-  --query "SELECT count() FROM telemetryflow.metrics_1m"
+  --query "SELECT count() FROM ${TELEMETRYFLOW_DB_NAME:-telemetryflow_db}.metrics_1m"
 
 # Test write access (should fail)
 clickhouse-client --user=hermes_readonly --password=CHANGE_ME \
-  --query "INSERT INTO telemetryflow.metrics_1m VALUES (1,2,3)"
+  --query "INSERT INTO ${TELEMETRYFLOW_DB_NAME:-telemetryflow_db}.metrics_1m VALUES (1,2,3)"
 # Expected: Cannot execute query in readonly mode
 
 # Test system access (should fail — no grant)

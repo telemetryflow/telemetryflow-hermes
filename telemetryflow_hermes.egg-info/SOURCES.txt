@@ -12,6 +12,9 @@ plugins/telemetryflow/tools/check_service_map.py
 plugins/telemetryflow/tools/check_uptime.py
 plugins/telemetryflow/tools/check_vm.py
 plugins/telemetryflow/tools/generate_insight.py
+plugins/telemetryflow/tools/generate_postmortem.py
+plugins/telemetryflow/tools/generate_rca_report.py
+plugins/telemetryflow/tools/generate_rca_template.py
 plugins/telemetryflow/tools/get_exemplars.py
 plugins/telemetryflow/tools/list_traces.py
 plugins/telemetryflow/tools/manage_alerts.py

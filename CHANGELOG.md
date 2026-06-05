@@ -7,13 +7,13 @@
 
   <h3>TelemetryFlow Hermes — Self-Improving AI Agent for Observability Incident Response</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.0.0-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.2.0-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python)](https://www.python.org/)
 [![Hermes](https://img.shields.io/badge/Hermes-Agent-00d4aa)](https://github.com/NousResearch/hermes-agent)
-[![Tests](https://img.shields.io/badge/Tests-458%20passing-brightgreen.svg)](tests/)
-[![Coverage](https://img.shields.io/badge/Coverage-97%25-brightgreen.svg)](tests/)
-[![Tools](https://img.shields.io/badge/Tools-37%20Plugin-blueviolet)](plugins/telemetryflow/plugin.yaml)
+[![Tests](https://img.shields.io/badge/Tests-521%20passing-brightgreen.svg)](tests/)
+[![Coverage](https://img.shields.io/badge/Coverage-99%25-brightgreen.svg)](tests/)
+[![Tools](https://img.shields.io/badge/Tools-40%20Plugin-blueviolet)](plugins/telemetryflow/plugin.yaml)
 [![ContextTypes](https://img.shields.io/badge/ContextTypes-74-9cf)](docs/api/context-types.md)
 [![ClickHouse](https://img.shields.io/badge/ClickHouse-Readonly-FFCC00?logo=clickhouse)](security/clickhouse-readonly.sql)
 [![Docs](https://img.shields.io/badge/Docs-28%20Pages-informational)](docs/)
@@ -28,6 +28,138 @@ All notable changes to **TelemetryFlow Hermes** will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.2.0] - 2026-06-05
+
+### Summary
+
+**RCA reports, postmortem generation, cybersecurity defense, full ClickHouse access, and manual review templates.**
+
+Three new tools for automated incident reporting: `generate_rca_report` produces full Root Cause Analysis with 5W analysis, mermaid timeline diagrams, and Jira/Trello ticket summaries. `generate_postmortem` generates comprehensive postmortem reports with lessons learned and action items. `generate_rca_template` provides a blank template for manual human review. All four agent profiles now have cybersecurity defense postures and full access to all 20 ClickHouse read-only tables.
+
+### Added
+
+#### RCA & Postmortem Reports — 3 New Tools
+
+- **`generate_rca_report`** — Full Root Cause Analysis report with:
+  - 5W analysis (What, Where, When, Why, How)
+  - Impact assessment with before/during/after metrics
+  - Mermaid timeline diagram with all events
+  - Mermaid incident response flow diagram
+  - Blast radius analysis
+  - Contributing factors table
+  - Action items with owners and priorities
+  - Lessons learned
+  - Actions: `rca` (report only), `jira` (report + Jira ticket), `trello` (report + Trello card), `all` (report + both)
+  - Jira/Trello submission dual-gated by `JIRA_ENABLED`/`TRELLO_ENABLED` env vars + `--submit true` flag
+  - Force-submit actions: `jira-submit`, `trello-submit`, `submit` (bypass enabled flags)
+- **`generate_postmortem`** — Comprehensive postmortem report with:
+  - Detailed timeline with mermaid diagram
+  - 5W analysis
+  - Remediation flow diagram
+  - Lessons learned (what went well, what to improve, where lucky)
+  - Action items table
+  - Appendix with alert payload and metrics snapshot
+  - Actions: `postmortem` (full report), `template` (blank template)
+- **`generate_rca_template`** — Blank RCA template for manual review with:
+  - Document control section
+  - Impact assessment with blast radius mermaid diagram
+  - 5W analysis with placeholder fields
+  - Detailed timeline with mermaid
+  - Root cause deep dive with causal chain diagram
+  - Contributing factors table
+  - Lessons learned checklists
+  - Action items with Jira/Trello ticket references
+  - Approval signature section
+
+#### Cybersecurity Defense — All 4 Agents
+
+- **Triage Agent** — Threat-informed triage with security classification override. Red flag patterns for credential stuffing, SQL injection, insider threats, cryptojacking, data exfiltration, lateral movement, privilege escalation. `SECURITY_FLAG` delegation context.
+- **Investigator Agent** — Security hypothesis generation alongside operational hypotheses. Mandatory security evidence queries (audit logs, auth patterns, network map, IAM, SSO). Attack pattern recognition table. Security escalation protocol.
+- **Reviewer Agent** — Security review checklist for every investigation. Cover-up detection for "accidental" data deletion, performance degradation masking exfiltration, deploy rollback that changes security configs. Security verdict override capability.
+- **Remediator Agent** — Security-aware remediation checks (forensic evidence destruction, access control weakening, attack surface creation). Containment-first protocol for security incidents. Post-action security verification (audit logs, RBAC, secrets, network policies).
+
+#### Full ClickHouse Access — All 4 Profiles
+
+- All 4 agent `config.yaml` files now include all 20 ClickHouse read-only tables (matching `security/clickhouse-readonly.sql`):
+  - Triage: 2 → 20 tables (removed non-existent `alert_rules`)
+  - Investigator: 6 → 20 tables
+  - Reviewer: 6 → 20 tables
+  - Remediator: 2 → 20 tables
+
+### Changed
+
+- Plugin version: 3.0.0 → 1.2.0 (aligned with project versioning)
+- `post-remediation.sh` hook now auto-generates RCA report after successful remediation, saves to `~/.hermes/reports/`
+- `pyproject.toml` — added `SIM105`, `SIM117` to ruff ignore list (try/except/pass and nested with patterns needed for graceful query failure handling)
+- Test suite: 458 → 521 tests (63 new), coverage: 97.38% → 99.08%, source files: 38 → 41
+
+### Fixed
+
+- `generate_rca_report.py` — `_generate_impact_metrics` now handles list responses from ClickHouse queries
+- `generate_rca_report.py` / `generate_postmortem.py` — added `return` after `sys.exit(1)` for mocked test environments
+
+## [1.1.0] - 2026-06-05
+
+### Summary
+
+**Agent personality overhaul, dynamic database configuration, simplified Makefile, and Docker deployment refinements.**
+
+Agent SOUL.md files rewritten with brutally honest, adversarial, debate-oriented personalities. Each agent now operates as a scientist who challenges other agents — no hallucination, no hedging, evidence-only reasoning. The Triage agent classifies with zero tolerance for uncertainty. The Investigator treats every hypothesis as guilty until proven innocent. The Reviewer is a hostile skeptic. The Remediator is a cautious pragmatist who refuses to act without proof.
+
+### Added
+
+#### Agent Personalities — Adversarial Debate Framework
+
+- **Triage Agent** — Paranoid gatekeeper. Assumes alerts lie until proven truthful. Zero hallucination policy with banned vocabulary ("I think", "probably"). New INCOMPLETE classification for ambiguous alerts. Issues challenges to Investigator: "Prove me right or prove me wrong."
+- **Investigator Agent** — Hostile scientist. Treats every hypothesis as guilty until proven innocent with data. Falsification-first protocol. Zero tolerance for narrative without numbers. Cross-examines own findings before submitting. Demands the Reviewer tear the hypothesis apart.
+- **Reviewer Agent** — Skeptic devils advocate. Actively hunts for reasons the investigation is wrong. Falsification protocol: tries to break the hypothesis before accepting it. Flags unstated assumptions as speculation. Only verdicts: CONFIRMED, NEEDS_MORE_EVIDENCE, REJECTED — no "looks good to me."
+- **Remediator Agent** — Cautious pragmatist. Refuses to act without a confirmed verdict from Reviewer. Every action includes blast radius analysis. First question: "What breaks if I am wrong?" Post-action verification is mandatory, not optional.
+
+#### Dynamic Database Configuration
+
+- `TELEMETRYFLOW_DB_NAME` environment variable — single source of truth for database name (default: `telemetryflow_db`)
+- `docker-compose.yaml` — all PostgreSQL and ClickHouse references use `${TELEMETRYFLOW_DB_NAME:-telemetryflow_db}`
+- `security/clickhouse-readonly.sql` — uses `${TELEMETRYFLOW_DB_NAME}` placeholder, substituted by `setup-readonly-user.sh`
+- `security/setup-readonly-user.sh` — reads `TELEMETRYFLOW_DB_NAME` and performs runtime substitution into SQL
+- `.env.example` — new `TELEMETRYFLOW_DB_NAME=telemetryflow_db` in Platform Connection section
+
+#### Simplified Makefile
+
+- `make init` — one-command first-time setup (install hermes → configure → deploy)
+- `make configure` — copy .env, install config, profiles, skills, plugins, cron, hooks
+- `make env` — setup `.env` from `.env.example` + install `config.yaml` + `SOUL.md`
+- `make docker-build` / `make docker-up` / `make docker-down` — Docker shortcuts
+- `make stop` — stop all agent gateways
+- `make start` — install deps + configure
+- `make reset` — clean + re-configure
+
+#### Docker Deployment
+
+- `docker-compose.yaml` — 4 profiles: `core` (backend + frontend + postgres + clickhouse + redis + nats), `monitoring` (tfo-collector + tfo-agent + jaeger), `tools` (portainer), `all`
+- `Dockerfile` — single-stage, python:3.13-slim-trixie, CVE patching, non-root user
+- `run-container.sh` — build, tag, push, compose orchestration with `--up`/`--down`/`--profile` flags
+
+#### CI/CD
+
+- `.github/workflows/docker.yml` — multi-platform build (amd64/arm64), Docker Hub, SBOM, Trivy scan
+- `.github/workflows/ci.yml` — 7-job CI with split test-unit/test-integration, matrix 3.10-3.13
+- `.github/workflows/release.yml` — tag-triggered release with checksums
+
+### Changed
+
+- Version unified to `1.1.0` across all files (pyproject.toml, docker-compose.yaml, run-container.sh, CI workflows, GitLab CI)
+- `docs/architecture.md` — directory structure expanded with all 37 tools (6 categories), Docker/CI files, tests, 18 skill categories
+- `docs/security/clickhouse-readonly.md` — all SQL examples use `${TELEMETRYFLOW_DB_NAME}` placeholder, automated setup reads env var
+- `docs/operations/troubleshooting.md` — ClickHouse queries use `${TELEMETRYFLOW_DB_NAME:-telemetryflow_db}`
+- `CONTRIBUTING.md` — project structure updated with Docker/CI files, skill count corrected
+- Agent SOUL.md files completely rewritten (triage, investigator, reviewer, remediator) — from polite operators to adversarial scientists
+
+### Removed
+
+- Hardcoded `telemetryflow_db` / `telemetryflow` database name references (replaced by `TELEMETRYFLOW_DB_NAME` env var)
+- Old Makefile `setup` target (replaced by `init` + `configure`)
+- Old script-based `profiles` target (replaced by inline Makefile logic)
 
 ## [1.0.0] - 2026-06-04
 

@@ -105,6 +105,21 @@ class TestManageReports:
                 tool.main()
             mock_exit.assert_called_with(1)
 
+    def test_definitions_with_filters(self, mock_env, mock_urlopen, capture_stdout):
+        m, mock_resp = mock_urlopen
+        mock_resp.read.return_value = json.dumps({"data": []}).encode("utf-8")
+
+        with mock.patch(
+            "sys.argv",
+            ["manage_reports.py", "--resource", "definitions", "--type", "pdf", "--schedule", "daily"],
+        ):
+            tool = _import_tool()
+            tool.main()
+
+        url = m.call_args[0][0].full_url
+        assert "type=pdf" in url
+        assert "schedule=daily" in url
+
     def test_no_api_key_exits(self, mock_exit):
         env = {k: v for k, v in os.environ.items() if k != "TELEMETRYFLOW_API_KEY"}
         with mock.patch.dict(os.environ, env, clear=True), mock.patch(

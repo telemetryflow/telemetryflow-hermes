@@ -46,26 +46,15 @@ graph TB
 
 ## Step-by-Step
 
-### Step 1 — Install Hermes Agent
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
-source ~/.bashrc
-
-# Verify
-hermes doctor
-hermes doctor --fix  # auto-repair issues
-```
-
-### Step 2 — Clone and Configure
+### Step 1 — Clone and Setup
 
 ```bash
 git clone https://github.com/telemetryflow/telemetryflow-hermes.git
 cd telemetryflow-hermes
-cp .env.example ~/.hermes/.env
+make env
 ```
 
-### Step 3 — Edit Environment Variables
+### Step 2 — Edit Environment Variables
 
 Edit `~/.hermes/.env`:
 
@@ -83,7 +72,7 @@ ANTHROPIC_API_KEY=sk-ant-your-key    # Investigator
 ZHIPU_API_KEY=your-zhipu-key         # Triage/Reviewer/Remediator
 ```
 
-### Step 4 — Create TelemetryFlow API Key
+### Step 3 — Create TelemetryFlow API Key
 
 In TelemetryFlow UI:
 
@@ -104,7 +93,7 @@ Required scopes:
 - `llm:insights` — Generate insights
 - `telemetry:read` — Query ClickHouse
 
-### Step 5 — Setup ClickHouse Read-Only User
+### Step 4 — Setup ClickHouse Read-Only User
 
 ```bash
 # Run on ClickHouse server as admin
@@ -113,31 +102,15 @@ clickhouse-client < security/clickhouse-readonly.sql
 
 This creates `hermes_readonly` with SELECT grants on 20 telemetry tables. See [ClickHouse Security](../security/clickhouse-readonly.md).
 
-### Step 6 — Deploy Profiles and Tools
+### Step 5 — Create Telegram Bots
 
-```bash
-make setup
+Create 4 bots via @BotFather on Telegram:
+
 ```
-
-This runs:
-
-1. `scripts/setup-profiles.sh` — Creates 4 agent profiles
-2. Skills installation — Copies 29 skills to `~/.hermes/skills/`
-3. Cron installation — Copies `jobs.json` to `~/.hermes/cron/`
-4. Security setup — Runs ClickHouse readonly user setup
-5. Hooks installation — Copies 3 lifecycle hooks
-6. Plugin installation — Copies 37 tools to `~/.hermes/plugins/`
-
-### Step 7 — Configure Telegram Gateways
-
-```bash
-# Create 4 bots via @BotFather on Telegram
-# /newbot → triage_bot
-# /newbot → investigator_bot
-# /newbot → reviewer_bot
-# /newbot → remediator_bot
-
-make telegram
+/newbot → triage_bot
+/newbot → investigator_bot
+/newbot → reviewer_bot
+/newbot → remediator_bot
 ```
 
 For each bot, get the chat ID:
@@ -146,7 +119,23 @@ For each bot, get the chat ID:
 2. Visit `https://api.telegram.org/bot<TOKEN>/getUpdates`
 3. Copy the `chat.id` value
 
-### Step 8 — Verify Pipeline
+### Step 6 — First-Time Setup
+
+```bash
+make init
+```
+
+This installs the Hermes agent and configures:
+
+- 4 agent profiles (triage, investigator, reviewer, remediator)
+- 29 skills across 18 categories
+- 6 cron jobs
+- 37 plugin tools
+- 3 lifecycle hooks
+- ClickHouse read-only security
+- 4 Telegram gateways
+
+### Step 7 — Verify Pipeline
 
 ```bash
 make verify
@@ -168,7 +157,7 @@ graph TD
     V7 --> OK["ALL CHECKS PASSED"]
 ```
 
-### Step 9 — Start Gateways
+### Step 8 — Start Gateways
 
 ```bash
 make deploy
@@ -181,7 +170,7 @@ Starts 4 background processes:
 - `hermes -p reviewer gateway start`
 - `hermes -p remediator gateway start`
 
-### Step 10 — Test with Sample Alert
+### Step 9 — Test with Sample Alert
 
 Send a test alert to the Triage bot on Telegram:
 
@@ -198,23 +187,21 @@ Expected flow: Triage → Investigator → Reviewer → Remediator → Human app
 
 ## Make Targets Reference
 
-| Target            | Description                                             |
-| ----------------- | ------------------------------------------------------- |
-| `make install`    | Install Hermes Agent only                               |
-| `make setup`      | Deploy profiles, skills, cron, security, hooks, plugins |
-| `make profiles`   | Create 4 agent profiles                                 |
-| `make skills`     | Install 29 observability skills                         |
-| `make cron`       | Install 6 cron jobs                                     |
-| `make security`   | Setup ClickHouse read-only user                         |
-| `make hooks`      | Install 3 lifecycle hooks                               |
-| `make plugins`    | Install TelemetryFlow plugin (37 tools)                 |
-| `make telegram`   | Configure 4 Telegram gateways                           |
-| `make verify`     | Run pipeline verification                               |
-| `make deploy`     | Setup + start all gateways                              |
-| `make status`     | Check gateway status                                    |
-| `make doctor`     | Run `hermes doctor --fix`                               |
-| `make clean`      | Remove all installed profiles/skills/plugins            |
-| `make air-gapped` | Deploy with Ollama (offline)                            |
+| Target                | Description                                              |
+| --------------------- | -------------------------------------------------------- |
+| `make init`           | First-time setup (install hermes + configure everything) |
+| `make configure`      | Install profiles, skills, plugins, cron, hooks           |
+| `make env`            | Setup .env from .env.example                             |
+| `make deploy`         | Start all 4 Telegram agent gateways                      |
+| `make stop`           | Stop all gateways                                        |
+| `make status`         | Check gateway status                                     |
+| `make verify`         | End-to-end verification                                  |
+| `make doctor`         | Run `hermes doctor --fix`                                |
+| `make docker-build`   | Build Docker image                                       |
+| `make docker-up`      | Start Docker containers                                  |
+| `make docker-down`    | Stop Docker containers                                   |
+| `make clean`          | Remove installed components                              |
+| `make reset`          | Clean + re-configure                                     |
 
 ## Production Considerations
 

@@ -73,3 +73,14 @@ class TestListTraces:
             tool = _import_tool()
             tool.main()
             mock_exit.assert_called_with(1)
+
+    def test_with_trace_id(self, mock_env, mock_urlopen, capture_stdout):
+        m, mock_resp = mock_urlopen
+        mock_resp.read.return_value = json.dumps({"data": []}).encode("utf-8")
+
+        with mock.patch("sys.argv", ["list_traces.py", "--trace_id", "abc123"]):
+            tool = _import_tool()
+            tool.main()
+
+        output = json.loads(capture_stdout.getvalue())
+        assert "data" in output

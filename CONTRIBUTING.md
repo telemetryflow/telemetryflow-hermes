@@ -7,13 +7,13 @@
 
   <h3>TelemetryFlow Hermes — Self-Improving AI Agent for Observability Incident Response</h3>
 
-[![Version](https://img.shields.io/badge/Version-1.0.0-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.2.0-orange.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python)](https://www.python.org/)
 [![Hermes](https://img.shields.io/badge/Hermes-Agent-00d4aa)](https://github.com/NousResearch/hermes-agent)
-[![Tests](https://img.shields.io/badge/Tests-458%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-472%20passing-brightgreen.svg)](tests/)
 [![Coverage](https://img.shields.io/badge/Coverage-97%25-brightgreen.svg)](tests/)
-[![Tools](https://img.shields.io/badge/Tools-37%20Plugin-blueviolet)](plugins/telemetryflow/plugin.yaml)
+[![Tools](https://img.shields.io/badge/Tools-40%20Plugin-blueviolet)](plugins/telemetryflow/plugin.yaml)
 [![ContextTypes](https://img.shields.io/badge/ContextTypes-74-9cf)](docs/api/context-types.md)
 [![ClickHouse](https://img.shields.io/badge/ClickHouse-Readonly-FFCC00?logo=clickhouse)](security/clickhouse-readonly.sql)
 [![Docs](https://img.shields.io/badge/Docs-28%20Pages-informational)](docs/)
@@ -47,12 +47,12 @@ Be respectful, constructive, and professional. We follow the [Contributor Covena
 
 ### Prerequisites
 
-| Requirement | Version | Install |
-|-------------|---------|---------|
-| Python 3 | 3.8+ | `python3 --version` |
-| pytest | Latest | `pip install pytest pytest-cov` |
-| ruff | Latest | `pip install ruff` |
-| Hermes Agent | Latest | See [Quick Start](./docs/getting-started.md) |
+| Requirement  | Version | Install                                      |
+| ------------ | ------- | -------------------------------------------- |
+| Python 3     | 3.8+    | `python3 --version`                          |
+| pytest       | Latest  | `pip install pytest pytest-cov`              |
+| ruff         | Latest  | `pip install ruff`                           |
+| Hermes Agent | Latest  | See [Quick Start](./docs/getting-started.md) |
 
 ### Fork and Clone
 
@@ -82,10 +82,10 @@ make ci-pipeline
 
 ```
 telemetryflow-hermes/
-├── plugins/telemetryflow/tools/    # 37 tool implementations (Python stdlib only)
+├── plugins/telemetryflow/tools/    # 40 tool implementations (Python stdlib only)
 ├── profiles/                       # Agent profiles (triage, investigator, reviewer, remediator)
 ├── skills/                         # 29 skills across 18 categories
-├── tests/                          # Test suite (458 tests, 97% coverage)
+├── tests/                          # Test suite (472 tests, 97% coverage)
 │   ├── conftest.py                 # Shared fixtures
 │   ├── mocks/                      # Mock objects (MockTFOApi, response factories)
 │   ├── unit/                       # Unit tests per tool (34 files)
@@ -155,18 +155,21 @@ Skills are Markdown files with YAML frontmatter:
 name: skill-name
 description: >
   When to activate this skill.
-version: 1.0.0
+  version: 1.2.0
 author: agent
 ---
 
 ## Procedure
+
 1. Step one
 2. Step two
 
 ## Pitfalls
+
 - Common mistake to avoid
 
 ## Verification
+
 - How to verify success
 ```
 
@@ -197,11 +200,11 @@ pytest tests/unit/test_query_metrics.py -v
 
 ### Test Coverage Requirements
 
-| Layer | Minimum Coverage |
-|-------|-----------------|
-| Shared utilities (`_shared.py`) | 95% |
-| Individual tools | 90% |
-| Overall | **95%** |
+| Layer                           | Minimum Coverage |
+| ------------------------------- | ---------------- |
+| Shared utilities (`_shared.py`) | 95%              |
+| Individual tools                | 90%              |
+| Overall                         | **95%**          |
 
 ### Writing Tests
 
@@ -249,14 +252,14 @@ class Test<ToolName>:
 
 ### Available Fixtures
 
-| Fixture | Description |
-|---------|-------------|
-| `mock_env` | Sets all `TELEMETRYFLOW_*` environment variables |
-| `mock_urlopen` | Mocks `urllib.request.urlopen` with configurable response |
-| `mock_urlopen_error` | Mocks HTTP error (404) |
-| `mock_urlopen_conn_error` | Mocks connection error |
-| `capture_stdout` | Captures stdout output |
-| `mock_exit` | Mocks `sys.exit` to prevent test termination |
+| Fixture                   | Description                                               |
+| ------------------------- | --------------------------------------------------------- |
+| `mock_env`                | Sets all `TELEMETRYFLOW_*` environment variables          |
+| `mock_urlopen`            | Mocks `urllib.request.urlopen` with configurable response |
+| `mock_urlopen_error`      | Mocks HTTP error (404)                                    |
+| `mock_urlopen_conn_error` | Mocks connection error                                    |
+| `capture_stdout`          | Captures stdout output                                    |
+| `mock_exit`               | Mocks `sys.exit` to prevent test termination              |
 
 ## Submitting Changes
 
@@ -293,13 +296,13 @@ class Test<ToolName>:
 
 ### Naming Conventions
 
-| Type | Convention | Example |
-|------|-----------|---------|
-| Tool files | `snake_case.py` | `query_metrics.py` |
-| Test files | `test_<tool>.py` | `test_query_metrics.py` |
-| Skill files | `SKILL.md` | `skills/observability/k8s-pod-debug/SKILL.md` |
-| Profile dirs | `kebab-case/` | `profiles/triage/` |
-| Environment variables | `TELEMETRYFLOW_*` | `TELEMETRYFLOW_API_KEY` |
+| Type                  | Convention        | Example                                       |
+| --------------------- | ----------------- | --------------------------------------------- |
+| Tool files            | `snake_case.py`   | `query_metrics.py`                            |
+| Test files            | `test_<tool>.py`  | `test_query_metrics.py`                       |
+| Skill files           | `SKILL.md`        | `skills/observability/k8s-pod-debug/SKILL.md` |
+| Profile dirs          | `kebab-case/`     | `profiles/triage/`                            |
+| Environment variables | `TELEMETRYFLOW_*` | `TELEMETRYFLOW_API_KEY`                       |
 
 ### Markdown
 
@@ -313,6 +316,7 @@ class Test<ToolName>:
 ### Zero Dependencies Rule
 
 All plugin tools must use **Python standard library only**. No `requests`, `httpx`, `click`, or any external package. This ensures:
+
 - Maximum portability (no virtualenv needed)
 - Zero supply chain risk
 - Instant deployment on any system with Python 3
@@ -329,6 +333,7 @@ graph LR
 ```
 
 Never connect to ClickHouse directly. Always go through the TFO API for:
+
 - Authentication and authorization
 - Workspace scoping
 - Audit logging
@@ -337,6 +342,7 @@ Never connect to ClickHouse directly. Always go through the TFO API for:
 ### Environment Variable Prefix
 
 All environment variables use the `TELEMETRYFLOW_` prefix:
+
 - `TELEMETRYFLOW_API_KEY`
 - `TELEMETRYFLOW_API_URL`
 - `TELEMETRYFLOW_ORGANIZATION_ID`

@@ -1,6 +1,6 @@
 # Investigator Agent
 
-The workhorse of the pipeline. Queries all four telemetry signals, correlates evidence, and produces root cause hypotheses.
+Hostile scientist. Falsification-first protocol — treats every hypothesis as guilty until proven innocent. Cross-examines own findings. Documents dead hypotheses alongside surviving ones.
 
 ## Role
 
@@ -16,7 +16,10 @@ graph TD
     T --> CORR
     E --> CORR
     CORR --> HYP["Root Cause<br/>Hypothesis"]
-    HYP --> DELEGATE["Delegate to Reviewer"]
+    HYP --> FALSIFY["Falsify Hypothesis<br/>(guilty until proven innocent)"]
+    FALSIFY --> DEAD["Document Dead<br/>Hypotheses"]
+    FALSIFY --> DELEGATE["Delegate to Reviewer"]
+    DEAD --> FALSIFY
 
     style M fill:#1a3a6b,stroke:#3b82f6,color:#fff
     style L fill:#1a3a6b,stroke:#3b82f6,color:#fff
@@ -37,10 +40,14 @@ graph TD
 ## SOUL.md Identity
 
 ```
-You are a senior SRE investigator. You query ClickHouse for evidence
-across all four telemetry signals. You never guess at a root cause
-without data. You follow a systematic approach: gather evidence,
-cross-reference with history, form hypotheses, propose remediation.
+You are a HOSTILE SCIENTIST. You follow a falsification-first protocol —
+every hypothesis is GUILTY until proven innocent. You cross-examine your
+own findings as if they were submitted by your worst enemy. You document
+every dead hypothesis alongside surviving ones — failed investigations
+are data, not waste. You never fall in love with a hypothesis. If the
+evidence contradicts your theory, you kill it immediately and move on.
+You query all four telemetry signals systematically and demand that each
+piece of evidence independently corroborate the others.
 ```
 
 ## Allowed ClickHouse Tables
@@ -114,13 +121,29 @@ query_correlations(signal_types="metrics,logs,traces", service="payments-api")
 → Correlated incident window: 03:45:00 — 03:47:30 UTC
 ```
 
-### Step 7 — Form Hypothesis
+### Step 7 — Form and Falsify Hypotheses
 
-Based on evidence:
+Generate multiple hypotheses and attempt to falsify each one:
+
+```
+Hypothesis A: v2.4.1 deploy increased memory allocation beyond 512MiB request
+  → Falsification attempt: Check if spike preceded deploy → NO, spike at deploy time
+  → Status: SURVIVING
+
+Hypothesis B: Memory leak in payments-lib dependency
+  → Falsification attempt: Check if memory grows without bound → NO, stabilizes at 890MiB
+  → Status: DEAD (documented)
+
+Hypothesis C: External traffic surge caused OOM
+  → Falsification attempt: Check request rate → NO, request rate normal
+  → Status: DEAD (documented)
+```
+
+Surviving hypothesis for Reviewer:
 
 - Memory spike → OOM kill → Pod restart → Latency breach
 - Root cause: v2.4.1 deploy increased memory allocation beyond 512MiB request
-- Confidence: HIGH (corroborated across 3 signals)
+- Confidence: HIGH (corroborated across 3 signals, 2 alternatives falsified)
 
 ## LLM Integration
 

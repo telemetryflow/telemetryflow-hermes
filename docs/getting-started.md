@@ -15,27 +15,17 @@ Install and configure TelemetryFlow Hermes for autonomous incident response.
 
 ## Installation
 
-### Step 1 — Install Hermes Agent
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
-source ~/.bashrc
-
-# Verify installation
-hermes doctor
-```
-
-### Step 2 — Clone TelemetryFlow Hermes
+### Step 1 — Clone TelemetryFlow Hermes
 
 ```bash
 git clone https://github.com/telemetryflow/telemetryflow-hermes.git
 cd telemetryflow-hermes
 ```
 
-### Step 3 — Configure API Keys
+### Step 2 — Setup Environment
 
 ```bash
-cp .env.example ~/.hermes/.env
+make env
 ```
 
 Edit `~/.hermes/.env` with your credentials. See [Environment Variables](./configuration/environment.md) for the complete reference.
@@ -56,38 +46,33 @@ ZHIPU_API_KEY=your_zhipu_key         # Triage/Reviewer/Remediator
 ANTHROPIC_API_KEY=your_anthropic_key  # Investigator
 ```
 
-### Step 4 — Deploy Agent Profiles
+### Step 3 — Create Telegram Bots
+
+Create 4 bots via [@BotFather](https://t.me/BotFather) on Telegram. Each agent needs its own bot token (Telegram allows 1 connection per token).
+
+### Step 4 — First-Time Setup
 
 ```bash
-make setup
+make init
 ```
 
-This installs:
+This installs the Hermes agent and configures everything:
 
 - 4 agent profiles (triage, investigator, reviewer, remediator)
 - 29 skills across 18 categories
 - 6 cron jobs
-- 37 plugin tools covering all 20 TFO Platform modules
+- 40 plugin tools covering all 20 TFO Platform modules
 - 3 lifecycle hooks
 - ClickHouse read-only security
+- 4 Telegram gateways
 
-### Step 5 — Configure Telegram
-
-```bash
-# Create 4 bots with @BotFather on Telegram
-# Then run:
-make telegram
-```
-
-Each agent needs its own bot token (Telegram allows 1 connection per token).
-
-### Step 6 — Verify Pipeline
+### Step 5 — Verify Pipeline
 
 ```bash
 make verify
 ```
 
-This runs `scripts/verify-pipeline.sh` which checks:
+This runs end-to-end verification:
 
 - Hermes installation
 - API connectivity
@@ -95,7 +80,7 @@ This runs `scripts/verify-pipeline.sh` which checks:
 - Telegram gateway
 - Tool availability
 
-### Step 7 — Start Gateways
+### Step 6 — Start Gateways
 
 ```bash
 make deploy
@@ -133,5 +118,5 @@ Expected timeline: **~23 seconds** from alert to proposed remediation.
 
 - [Architecture Overview](./architecture.md) — understand the system design
 - [Agent Configuration](./agents/README.md) — customize each agent's behavior
-- [Tool Reference](./tools/reference.md) — all 37 tools and parameters
+- [Tool Reference](./tools/reference.md) — all 40 tools and parameters
 - [Deployment Guide](./deployment/standard.md) — production deployment
