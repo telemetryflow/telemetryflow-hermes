@@ -39,7 +39,7 @@
 
 Instead, report security issues to:
 
-- **Email**: security@devopscorner.id
+- **Email**: security@telemetryflow.id
 - **GitHub**: Use the [Security Advisories](https://github.com/telemetryflow/telemetryflow-hermes/security/advisories/new) feature
 
 ### What to Include
