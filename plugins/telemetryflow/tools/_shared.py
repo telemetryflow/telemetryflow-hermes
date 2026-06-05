@@ -8,6 +8,15 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 
+ALLOWED_URL_SCHEMES = {"http", "https"}
+
+
+def _validate_url(url):
+    scheme = url.split("://")[0].lower() if "://" in url else ""
+    if scheme not in ALLOWED_URL_SCHEMES:
+        print(f"ERROR: Blocked URL scheme '{scheme}' — only {ALLOWED_URL_SCHEMES} allowed", file=sys.stderr)
+        sys.exit(1)
+
 
 def get_api_url():
     return os.environ.get("TELEMETRYFLOW_API_URL", "http://localhost:3000/api/v2")
@@ -40,6 +49,7 @@ def tfo_request(path, method="GET", data=None, params=None):
         body = json.dumps(data).encode("utf-8")
 
     req = urllib.request.Request(url, data=body, headers=headers, method=method)
+    _validate_url(url)
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             if resp.status == 204:

@@ -10,7 +10,7 @@ import urllib.parse
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(__file__))
-from _shared import clickhouse_query, now_iso, output_json, parse_args, tfo_request
+from _shared import _validate_url, clickhouse_query, now_iso, output_json, parse_args, tfo_request
 
 SEVERITY_MAP = {
     "critical": "P1 - Critical",
@@ -504,6 +504,7 @@ def _submit_jira(ticket):
         },
         method="POST",
     )
+    _validate_url(url)
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             result = json.loads(resp.read().decode("utf-8"))
@@ -550,6 +551,7 @@ def _submit_trello(card):
         headers={"Content-Type": "application/json", "Accept": "application/json"},
         method="POST",
     )
+    _validate_url(url)
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             result = json.loads(resp.read().decode("utf-8"))
@@ -594,6 +596,7 @@ def _trello_add_labels(card_id, api_key, api_token, label_names):
         url = f"https://api.trello.com/1/cards/{card_id}/labels"
         body = json.dumps({"key": api_key, "token": api_token, "name": name, "color": color}).encode("utf-8")
         req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"}, method="POST")
+        _validate_url(url)
         try:
             urllib.request.urlopen(req, timeout=10)
             added += 1
@@ -624,6 +627,7 @@ def _trello_add_checklist(card_id, api_key, api_token):
         }
     ).encode("utf-8")
     req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"}, method="POST")
+    _validate_url(url)
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             cl = json.loads(resp.read().decode("utf-8"))
@@ -642,6 +646,7 @@ def _trello_add_checklist(card_id, api_key, api_token):
                 item_req = urllib.request.Request(
                     item_url, data=item_body, headers={"Content-Type": "application/json"}, method="POST"
                 )
+                _validate_url(item_url)
                 try:
                     urllib.request.urlopen(item_req, timeout=10)
                     added += 1

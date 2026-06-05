@@ -13,7 +13,7 @@ import urllib.error
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(__file__))
-from _shared import CONTEXT_TYPES, get_api_key, get_api_url, now_iso, parse_args
+from _shared import CONTEXT_TYPES, _validate_url, get_api_key, get_api_url, now_iso, parse_args
 
 
 def main():
@@ -54,6 +54,7 @@ def main():
     }
 
     req = urllib.request.Request(url, data=json.dumps(data).encode("utf-8"), headers=headers, method="POST")
+    _validate_url(url)
 
     try:
         with urllib.request.urlopen(req, timeout=120) as resp:

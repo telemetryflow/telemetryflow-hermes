@@ -5,26 +5,23 @@
 # TelemetryFlow Hermes - Community Enterprise Observability Platform (CEOP)
 # Copyright (c) 2024-2026 Telemetri Data Indonesia. All rights reserved.
 #
-# Multi-stage build for minimal image size with aggressive CVE patching.
-# Uses Debian Trixie (13) base for patched system libraries (zlib 1.3.1,
-# sqlite3 3.46+, ncurses 6.5, PAM 1.7) and strips attack-surface packages.
+# Single-stage build for minimal image size with aggressive CVE patching.
+# Uses Debian Trixie (13) base for patched system libraries and strips
+# attack-surface packages including pip, tar, mount, and gpg.
 #
 # Hermes is a Python stdlib-only agent — no pip dependencies required.
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# Stage 1: Runtime (single-stage since no build needed)
-# -----------------------------------------------------------------------------
 FROM python:3.13-slim-trixie
 
-ARG VERSION=1.0.0
+ARG VERSION=1.2.0
 ARG GIT_COMMIT=unknown
 ARG GIT_BRANCH=unknown
 ARG BUILD_TIME=unknown
 
 LABEL org.opencontainers.image.title="TelemetryFlow Hermes" \
       org.opencontainers.image.description="Self-improving AI agent integration for TelemetryFlow Observability Platform" \
-      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.version="1.2.0" \
       org.opencontainers.image.vendor="TelemetryFlow" \
       org.opencontainers.image.authors="Telemetri Data Indonesia <support@telemetryflow.id>" \
       org.opencontainers.image.url="https://telemetryflow.id" \
@@ -71,7 +68,31 @@ RUN dpkg --remove --force-remove-essential --force-depends \
        libbinutils \
        libctf0 \
        libctf-nobfd0 \
+       tar \
+       mount \
+       bzip2 \
+       login \
+       passwd \
+       util-linux \
+       libmount1 \
+       libblkid1 \
+       libuuid1 \
+       libfdisk1 \
+       libsmartcols1 \
+       e2fsprogs \
+       libext2fs2 \
     || true
+
+RUN python -m pip uninstall -y pip setuptools wheel && \
+    rm -rf /usr/local/lib/python3.13/ensurepip \
+           /usr/local/lib/python3.13/site-packages/pip* \
+           /usr/local/lib/python3.13/site-packages/setuptools* \
+           /usr/local/lib/python3.13/site-packages/wheel* \
+           /usr/local/bin/pip* \
+           /usr/local/lib/python3.13/idlelib \
+           /usr/local/lib/python3.13/pydoc_data \
+           /usr/local/lib/python3.13/unittest \
+           /usr/local/lib/python3.13/lib2to3
 
 RUN apt-get autoremove -y --purge 2>/dev/null || true \
     && apt-get clean 2>/dev/null || true \
@@ -97,10 +118,13 @@ COPY --chown=telemetryflow:telemetryflow hooks/ /app/hooks/
 COPY --chown=telemetryflow:telemetryflow cron/ /app/cron/
 COPY --chown=telemetryflow:telemetryflow config.yaml /app/config.yaml
 COPY --chown=telemetryflow:telemetryflow SOUL.md /app/SOUL.md
+COPY --chown=telemetryflow:telemetryflow docker-entrypoint.py /app/docker-entrypoint.py
 
 USER telemetryflow
 
 WORKDIR /app
 
+ENTRYPOINT ["python3", "/app/docker-entrypoint.py"]
+
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import sys; sys.exit(0)"
+    CMD python3 /app/docker-entrypoint.py --check

@@ -378,3 +378,73 @@ class TestConstants:
         importlib.reload(_shared)
 
         assert len(_shared.PROVIDER_TYPES) == len(set(_shared.PROVIDER_TYPES))
+
+
+class TestValidateUrl:
+    def test_allows_http(self):
+        import importlib
+
+        import _shared
+
+        importlib.reload(_shared)
+
+        _shared._validate_url("http://localhost:3000/api/v2/test")
+
+    def test_allows_https(self):
+        import importlib
+
+        import _shared
+
+        importlib.reload(_shared)
+
+        _shared._validate_url("https://api.example.com/path")
+
+    def test_blocks_file_scheme(self, mock_exit):
+        import importlib
+
+        import _shared
+
+        importlib.reload(_shared)
+
+        _shared._validate_url("file:///etc/passwd")
+        mock_exit.assert_called_with(1)
+
+    def test_blocks_ftp_scheme(self, mock_exit):
+        import importlib
+
+        import _shared
+
+        importlib.reload(_shared)
+
+        _shared._validate_url("ftp://evil.com/payload")
+        mock_exit.assert_called_with(1)
+
+    def test_blocks_javascript_scheme(self, mock_exit):
+        import importlib
+
+        import _shared
+
+        importlib.reload(_shared)
+
+        _shared._validate_url("javascript:alert(1)")
+        mock_exit.assert_called_with(1)
+
+    def test_blocks_data_scheme(self, mock_exit):
+        import importlib
+
+        import _shared
+
+        importlib.reload(_shared)
+
+        _shared._validate_url("data:text/html,<script>alert(1)</script>")
+        mock_exit.assert_called_with(1)
+
+    def test_case_insensitive_scheme(self):
+        import importlib
+
+        import _shared
+
+        importlib.reload(_shared)
+
+        _shared._validate_url("HTTP://EXAMPLE.COM/path")
+        _shared._validate_url("HTTPS://example.com/path")

@@ -1,0 +1,9 @@
+[bandit]
+skips = B608
+
+# B608 (hardcoded SQL expression) is a false positive for this project.
+# All SQL strings are sent as HTTP POST payload to TFO Platform's
+# /api/v2/telemetry/query endpoint. The SQL is never executed locally —
+# TFO API handles ClickHouse query execution with its own auth, rate
+# limiting, and tenant isolation. This is by design: observability query
+# tools build ClickHouse SQL from tool parameters.

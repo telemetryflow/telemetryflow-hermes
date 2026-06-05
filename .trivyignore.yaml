@@ -1,0 +1,81 @@
+# TelemetryFlow Hermes — Trivy Ignore Configuration
+#
+# These are known vulnerabilities in Debian Trixie base image packages
+# that are either:
+#   1. Not exploitable in our container (no relevant attack surface)
+#   2. Pending upstream patches in Debian Trixie
+#   3. The vulnerable binary has been removed from the image
+#
+# Reviewed: 2026-06-05
+
+# --- pip: Removed from image via `pip uninstall` in Dockerfile ---
+# CVE-2025-47235 - Arbitrary code execution via malicious wheel
+# CVE-2025-47239 - Incorrect file installation due to improper archive handling
+CVE-2025-47235:
+  expires_at: "2026-09-05"
+  reason: "pip removed from container image — stdlib-only project, no pip dependencies"
+CVE-2025-47239:
+  expires_at: "2026-09-05"
+  reason: "pip removed from container image — stdlib-only project, no pip dependencies"
+
+# --- util-linux: Removed from image via dpkg --remove in Dockerfile ---
+# CVE-2025-3635 - Access control bypass due to improper hostname canonicalization
+# CVE-2025-3634 - TOCTOU in the mount program when setting up loop devices
+# CVE-2025-3633 - Heap buffer overread in setpwnam() when processing 256-byte usernames
+# CVE-2025-3632 - partial disclosure of arbitrary files in chfn and chsh
+CVE-2025-3635:
+  expires_at: "2026-09-05"
+  reason: "util-linux removed from container image"
+CVE-2025-3634:
+  expires_at: "2026-09-05"
+  reason: "util-linux removed from container image"
+
+# --- tar: Removed from image via dpkg --remove in Dockerfile ---
+# CVE-2025-46684 - Hidden file injection via crafted archives
+CVE-2025-46684:
+  expires_at: "2026-09-05"
+  reason: "tar removed from container image"
+
+# --- bzip2: Not used — no archive extraction in container ---
+CVE-2025-37814:
+  expires_at: "2026-09-05"
+  reason: "bzip2 off-by-one in bzip2recover — not used, no archive extraction"
+
+# --- glibc: Core C library, not removable ---
+# These are theoretical/low-severity for container workloads:
+# CVE-2025-3165  - Application crash via crafted DNS response
+# CVE-2025-1375  - Information disclosure via ungetwc
+# CVE-2025-1286  - Heap Buffer Overflow in scanf
+# CVE-2025-0336  - Out-of-bounds write via TSIG record
+# CVE-2025-0335  - Uncontrolled recursion in regexec
+# CVE-2025-0334  - Information disclosure of heap addresses
+# CVE-2025-0333  - ASLR bypass using cache
+# CVE-2025-0332  - Code execution via ldd on malicious ELF
+# CVE-2025-0331  - Stack guard protection bypass
+# CVE-2025-0330  - Excessive CPU/memory via glob
+# Tracking upstream Debian Trixie patches
+CVE-2025-3165:
+  expires_at: "2026-09-05"
+  reason: "glibc — requires malicious DNS server; container uses internal DNS"
+CVE-2025-1375:
+  expires_at: "2026-09-05"
+  reason: "glibc — wide character encoding edge case; no interactive terminal"
+CVE-2025-1286:
+  expires_at: "2026-09-05"
+  reason: "glibc — scanf %mc with large width; no user input to scanf"
+CVE-2025-0336:
+  expires_at: "2026-09-05"
+  reason: "glibc — TSIG record processing; no DNS server in container"
+CVE-2025-0335:
+  expires_at: "2026-09-05"
+  reason: "glibc — regexec recursion; no user-controlled regex patterns"
+
+# --- zlib: DoS via infinite loop in CRC32 combine ---
+CVE-2025-40829:
+  expires_at: "2026-09-05"
+  reason: "zlib — DoS via CRC32 combine; not exposed to external input"
+
+# --- xz: Buffer overflow in index decoding ---
+CVE-2025-31115:
+  expires_at: "2026-09-05"
+  reason: "xz — buffer overflow in index decoding; no xz extraction in container"

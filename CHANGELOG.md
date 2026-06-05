@@ -11,7 +11,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Python-3.8+-3776AB?logo=python)](https://www.python.org/)
 [![Hermes](https://img.shields.io/badge/Hermes-Agent-00d4aa)](https://github.com/NousResearch/hermes-agent)
-[![Tests](https://img.shields.io/badge/Tests-521%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-528%20passing-brightgreen.svg)](tests/)
 [![Coverage](https://img.shields.io/badge/Coverage-99%25-brightgreen.svg)](tests/)
 [![Tools](https://img.shields.io/badge/Tools-40%20Plugin-blueviolet)](plugins/telemetryflow/plugin.yaml)
 [![ContextTypes](https://img.shields.io/badge/ContextTypes-74-9cf)](docs/api/context-types.md)
@@ -92,7 +92,27 @@ Three new tools for automated incident reporting: `generate_rca_report` produces
 - Plugin version: 3.0.0 → 1.2.0 (aligned with project versioning)
 - `post-remediation.sh` hook now auto-generates RCA report after successful remediation, saves to `~/.hermes/reports/`
 - `pyproject.toml` — added `SIM105`, `SIM117` to ruff ignore list (try/except/pass and nested with patterns needed for graceful query failure handling)
-- Test suite: 458 → 521 tests (63 new), coverage: 97.38% → 99.08%, source files: 38 → 41
+- Test suite: 458 → 528 tests (70 new), coverage: 97.38% → 99.08%, source files: 38 → 41
+
+#### Docker Self-Configuration
+
+- **`docker-entrypoint.py`** — Python entrypoint that configures `~/.hermes/` from `/app/` templates at container start using environment variables
+  - Parses `HERMES_MODEL` (default: `zhipu/glm-5.1`) and `HERMES_INVESTIGATOR_MODEL` (default: `anthropic/claude-sonnet-4-5`) for per-profile model/provider assignment
+  - Writes `~/.hermes/.env` from container env vars (forwards all TELEMETRYFLOW_*, ANTHROPIC_*, ZHIPU_*, TELEGRAM_*, JIRA_*, TRELLO_* vars)
+  - Copies profiles, skills, plugins, cron, hooks, config.yaml, SOUL.md to `~/.hermes/`
+  - `--check` mode for healthcheck: validates auth config and API URL
+  - `HERMES_CMD` env var for exec-style command execution (e.g., `hermes -p triage gateway start`)
+- **`docker-compose.yaml`** — `tfo-hermes` service now uses `env_file: .env` + explicit environment passthrough for all 30+ env vars
+  - User only needs to edit `.env` (copied from `.env.example`) — no manual config file editing
+  - All LLM provider keys, Telegram tokens, Jira/Trello credentials, TFO connection vars passed through
+
+### Security
+
+- **Dockerfile**: Removed pip, setuptools, wheel, tar, mount, util-linux, bzip2, login, passwd, e2fsprogs from container image — eliminates pip CVEs and util-linux attack surface
+- **Dockerfile**: Version label updated from 1.0.0 → 1.2.0
+- **Bandit B310**: Added `_validate_url()` scheme validation in `_shared.py` — blocks `file://`, `ftp://`, `javascript:`, `data:` URL schemes. Applied to all 7 `urlopen` call sites
+- **Bandit B608**: Added `.bandit` config to skip false-positive SQL injection warnings — all SQL strings are HTTP payloads to TFO API, never executed locally
+- **Trivy**: Added `.trivyignore.yaml` documenting accepted base-image vulnerabilities (glibc, zlib, xz) with expiry dates and rationale
 
 ### Fixed
 
