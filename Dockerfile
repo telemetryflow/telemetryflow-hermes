@@ -43,6 +43,9 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+RUN groupadd -g 10001 telemetryflow && \
+    useradd -u 10001 -g telemetryflow -d /home/telemetryflow -m telemetryflow
+
 RUN dpkg --remove --force-remove-essential --force-depends \
        perl-base \
        libperl5.40 \
@@ -107,9 +110,6 @@ RUN apt-get autoremove -y --purge 2>/dev/null || true \
        /var/cache/* \
        /usr/lib/*/libgcrypt* \
        /usr/lib/*/libsasl2*
-
-RUN groupadd -g 10001 telemetryflow && \
-    useradd -u 10001 -g telemetryflow -d /home/telemetryflow -m telemetryflow
 
 COPY --chown=telemetryflow:telemetryflow plugins/ /app/plugins/
 COPY --chown=telemetryflow:telemetryflow profiles/ /app/profiles/

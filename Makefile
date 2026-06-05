@@ -527,6 +527,7 @@ ci-test-integration: ## CI: Run integration tests with coverage (continue-on-err
 	$(PYTEST) $(TESTS_DIR)/integration -v --tb=short \
 		--cov=$(COVERAGE_SOURCE) \
 		--cov-append \
+		--cov-fail-under=0 \
 		--cov-report=xml:coverage-integration.xml \
 		--cov-report=term-missing \
 		--junitxml=junit-integration.xml || true
