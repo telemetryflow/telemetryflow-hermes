@@ -263,9 +263,9 @@ flowchart TD
     parse --> validate["validate context_type"]
     validate --> post["POST /llm/chat/stream"]
     post --> sse["SSE Event Loop\ntimeout=120s"]
-    sse -->|"event=start"| start["capture conversationId"]
+    sse -->|"event=start"| evtStart["capture conversationId"]
     sse -->|"event=chunk"| chunk["print(content) to stdout"]
-    sse -->|"event=end"| end["print metadata to stderr"]
+    sse -->|"event=end"| evtEnd["print metadata to stderr"]
     sse -->|"event=error"| err["exit(1)"]
 ```
 
